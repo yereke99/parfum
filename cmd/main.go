@@ -1,0 +1,56 @@
+package main
+
+import (
+	"context"
+	"database/sql"
+	"os"
+	"os/signal"
+	"parfum/config"
+	"parfum/traits/logger"
+	"syscall"
+
+	"github.com/go-telegram/bot"
+	"go.uber.org/zap"
+)
+
+func main() {
+	zapLogger, err := logger.NewLogger()
+	if err != nil {
+		panic(err)
+	}
+
+	cfg, err := config.NewConfig()
+	if err != nil {
+		zapLogger.Error("error initializing config", zap.Error(err))
+		return
+	}
+
+	db, err := sql.Open("sqlite3", cfg.DBName)
+	if err != nil {
+		zapLogger.Error("error in connect to database", zap.Error(err))
+		return
+	}
+	defer db.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	opts := []bot.Option{}
+	b, err := bot.New(cfg.Token, opts...)
+	if err != nil {
+		zapLogger.Error("error in start bot", zap.Error(err))
+		return
+	}
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGINT)
+
+	go func() {
+		<-stop
+		zapLogger.Info("Bot stoppped successfully")
+		cancel()
+	}()
+
+	zapLogger.Info("Starting web server", zap.String("port", cfg.Port))
+	zapLogger.Info("Bot started successfully")
+	b.Start(ctx)
+}
