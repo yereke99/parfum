@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/go-telegram/bot"
+	"github.com/go-telegram/bot/models"
 	"go.uber.org/zap"
 )
 
@@ -28,6 +29,13 @@ func NewHandler(cfg *config.Config, zapLogger *zap.Logger, ctx context.Context) 
 	}
 
 	return h
+}
+
+func (h *Handler) DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	if update.Message == nil {
+		return
+	}
+
 }
 
 // SetBot sets the bot instance for the handler
@@ -70,6 +78,11 @@ func (h *Handler) StartWebServer(ctx context.Context, b *bot.Bot) {
 	mux.Handle("/files/", corsMiddleware(http.StripPrefix("/files/", http.FileServer(http.Dir("./files/")))))
 	mux.Handle("/photo/", corsMiddleware(http.StripPrefix("/photo/", http.FileServer(http.Dir("./photo/")))))
 
+	mux.HandleFunc("/prize", func(w http.ResponseWriter, r *http.Request) {
+		h.setCORSHeaders(w)
+		path := "./static/prize.html"
+		http.ServeFile(w, r, path)
+	})
 	// Health check endpoint
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		h.setCORSHeaders(w)
@@ -88,7 +101,7 @@ func (h *Handler) StartWebServer(ctx context.Context, b *bot.Bot) {
 		})
 	})
 
-	if err := http.ListenAndServe(h.cfg.Port, corsMiddleware(mux)); err != nil {
+	if err := http.ListenAndServe(h.cfg.Port, mux); err != nil {
 		h.logger.Fatal("Failed to start web server", zap.Error(err))
 	}
 }

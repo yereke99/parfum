@@ -6,10 +6,12 @@ import (
 	"os"
 	"os/signal"
 	"parfum/config"
+	"parfum/internal/handler"
 	"parfum/traits/logger"
 	"syscall"
 
 	"github.com/go-telegram/bot"
+	_ "github.com/mattn/go-sqlite3"
 	"go.uber.org/zap"
 )
 
@@ -34,6 +36,8 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
+	handle := handler.NewHandler(cfg, zapLogger, ctx)
+
 	opts := []bot.Option{}
 	b, err := bot.New(cfg.Token, opts...)
 	if err != nil {
@@ -43,12 +47,13 @@ func main() {
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGINT)
-
 	go func() {
 		<-stop
 		zapLogger.Info("Bot stoppped successfully")
 		cancel()
 	}()
+
+	go handle.StartWebServer(ctx, b)
 
 	zapLogger.Info("Starting web server", zap.String("port", cfg.Port))
 	zapLogger.Info("Bot started successfully")
