@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Парфюм Басқару Панелі</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #1e293b;
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: opacity 0.3s ease;
+            margin: 0;
+            padding: 0;
+            border: none;
+            outline: none;
+        }
+        
+        /* Remove any browser chrome - Frameless design */
+        html, body {
+            -webkit-app-region: drag;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        /* Make interactive elements selectable and non-draggable */
+        input, button, textarea, select, a, .menu-item, .btn-card, .fab {
+            -webkit-app-region: no-drag;
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Left Sidebar Dashboard */
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 25px;
+            box-shadow: 5px 0 25px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .logo h1 {
+            font-size: 1.8rem;
+            font-weight: 300;
+            margin-bottom: 5px;
+        }
+
+        .logo p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+        }
+
+        .stats-section {
+            margin-bottom: 40px;
+        }
+
+        .stats-title {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 600;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .stat-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(5px);
+        }
+
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .menu-section {
+            margin-bottom: 30px;
+        }
+
+        .menu-title {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 600;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            margin-bottom: 8px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(5px);
+        }
+
+        .menu-item.active {
+            background: rgba(255, 255, 255, 0.3);
+            font-weight: 600;
+        }
+
+        .menu-icon {
+            font-size: 1.2rem;
+            width: 20px;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 30px;
+            min-height: 100vh;
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            color: #1e293b;
+            font-weight: 600;
+        }
+
+        .search-container {
+            position: relative;
+            width: 350px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 20px 15px 50px;
+            border: 2px solid #e2e8f0;
+            border-radius: 25px;
+            font-size: 16px;
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.15);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2rem;
+            color: #64748b;
+        }
+
+        /* Floating Add Button */
+        .fab {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 1.8rem;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+            transition: all 0.3s ease;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fab:hover {
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 12px 35px rgba(16, 185, 129, 0.5);
+        }
+
+        /* Perfume Grid */
+        .perfumes-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        .container-header {
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            padding: 25px 30px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .container-title {
+            font-size: 1.4rem;
+            color: #1e293b;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .container-subtitle {
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+
+        .perfumes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            padding: 30px;
+        }
+
+        .perfume-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 3px 15px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            border: 1px solid #f1f5f9;
+            position: relative;
+        }
+
+        .perfume-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+            border-color: #667eea;
+        }
+
+        .perfume-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .perfume-content {
+            padding: 20px;
+        }
+
+        .perfume-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .perfume-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #1e293b;
+            line-height: 1.3;
+        }
+
+        .perfume-price {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .perfume-meta {
+            margin-bottom: 12px;
+        }
+
+        .perfume-sex {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .sex-male {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .sex-female {
+            background: #fce7f3;
+            color: #be185d;
+        }
+
+        .sex-unisex {
+            background: #f3e8ff;
+            color: #7c3aed;
+        }
+
+        .perfume-description {
+            color: #64748b;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 15px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-card {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-edit {
+            background: #f0f9ff;
+            color: #0369a1;
+            border: 1px solid #e0f2fe;
+        }
+
+        .btn-edit:hover {
+            background: #0369a1;
+            color: white;
+        }
+
+        .btn-delete {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .btn-delete:hover {
+            background: #dc2626;
+            color: white;
+        }
+
+        /* Modal Styles - Only for Bulk Delete */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            max-width: 650px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translate(-50%, -60%) scale(0.9); opacity: 0; }
+            to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            padding: 25px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.8rem;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: background 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 30px;
+            color: #6b7280;
+        }
+
+        .empty-icon {
+            font-size: 5rem;
+            margin-bottom: 25px;
+            color: #d1d5db;
+        }
+
+        .empty-title {
+            font-size: 1.6rem;
+            color: #374151;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .empty-description {
+            font-size: 1.1rem;
+            color: #6b7280;
+            margin-bottom: 30px;
+        }
+
+        .loading-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 80px;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .toast {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: white;
+            border-radius: 12px;
+            padding: 20px 25px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            z-index: 1100;
+            transform: translateX(400px);
+            transition: transform 0.4s ease;
+            border-left: 5px solid #10b981;
+            min-width: 300px;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.error {
+            border-left-color: #ef4444;
+        }
+
+        .toast-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .toast-icon {
+            font-size: 1.4rem;
+        }
+
+        .toast-message {
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .delete-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .delete-table th {
+            background: #f8fafc;
+            padding: 18px 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .delete-table td {
+            padding: 15px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+
+        .delete-table tr:hover {
+            background: #f8fafc;
+        }
+
+        .table-image {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            object-fit: cover;
+            border: 2px solid #e5e7eb;
+        }
+
+        .checkbox {
+            transform: scale(1.3);
+            margin-right: 12px;
+            cursor: pointer;
+        }
+
+        /* Navigation Animation */
+        .fade-out {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+                z-index: 999;
+            }
+            
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .fab {
+                bottom: 30px;
+                top: auto;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .content-header {
+                flex-direction: column;
+                gap: 20px;
+                align-items: stretch;
+            }
+            
+            .search-container {
+                width: 100%;
+            }
+            
+            .perfumes-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Left Sidebar Dashboard -->
+        <div class="sidebar">
+            <div class="logo">
+                <h1>🌸 Парфюм</h1>
+                <p>Басқару Жүйесі</p>
+            </div>
+
+            <div class="stats-section">
+                <div class="stats-title">📊 Статистика</div>
+                <div class="stat-item">
+                    <div class="stat-number" id="totalStat">-</div>
+                    <div class="stat-label">Барлық парфюм</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="maleStat">-</div>
+                    <div class="stat-label">Ерлерге арналған</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="femaleStat">-</div>
+                    <div class="stat-label">Әйелдерге арналған</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="unisexStat">-</div>
+                    <div class="stat-label">Универсалды</div>
+                </div>
+            </div>
+
+            <div class="menu-section">
+                <div class="menu-title">⚙️ Басқару</div>
+                <div class="menu-item active" onclick="showAllPerfumes()">
+                    <div class="menu-icon">📋</div>
+                    <div>Барлық парфюм</div>
+                </div>
+                <div class="menu-item" onclick="navigateToAddPerfume()">
+                    <div class="menu-icon">➕</div>
+                    <div>Жаңа парфюм қосу</div>
+                </div>
+                <div class="menu-item" onclick="filterBySex('Male')">
+                    <div class="menu-icon">👨</div>
+                    <div>Ерлер парфюмі</div>
+                </div>
+                <div class="menu-item" onclick="filterBySex('Female')">
+                    <div class="menu-icon">👩</div>
+                    <div>Әйелдер парфүмі</div>
+                </div>
+                <div class="menu-item" onclick="filterBySex('Unisex')">
+                    <div class="menu-icon">👥</div>
+                    <div>Универсалды</div>
+                </div>
+                <div class="menu-item" onclick="openBulkDeleteModal()">
+                    <div class="menu-icon">🗑️</div>
+                    <div>Көпті өшіру</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="content-header">
+                <h1 class="page-title">Парфюм Тізімі</h1>
+                <div class="search-container">
+                    <div class="search-icon">🔍</div>
+                    <input type="text" class="search-input" placeholder="Парфюм іздеу..." id="searchInput" oninput="searchPerfumes()">
+                </div>
+            </div>
+
+            <div class="perfumes-container">
+                <div class="container-header">
+                    <div class="container-title">Парфюм Коллекциясы</div>
+                    <div class="container-subtitle">Барлық парфюмдерді басқарыңыз</div>
+                </div>
+                
+                <div id="perfumesDisplay">
+                    <div class="loading-container">
+                        <div class="spinner"></div>
+                        <div>Парфюмдер жүктелуде...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Floating Add Button -->
+        <button class="fab" onclick="navigateToAddPerfume()" title="Жаңа парфюм қосу">
+            ➕
+        </button>
+    </div>
+
+    <!-- Bulk Delete Modal -->
+    <div id="deleteModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Парфюмдерді өшіру</div>
+                <button class="close-btn" onclick="closeBulkDeleteModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: #6b7280; margin-bottom: 25px; font-size: 1.1rem;">
+                    ⚠️ Өшіру үшін парфюмдерді таңдаңыз. Бұл әрекетті кері қайтару мүмкін емес.
+                </p>
+                
+                <div id="deleteTableContainer">
+                    <div class="loading-container">
+                        <div class="spinner"></div>
+                        <div>Парфюмдер жүктелуде...</div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 15px; margin-top: 30px;">
+                    <button type="button" onclick="closeBulkDeleteModal()" style="flex: 1; background: #6b7280; color: white; padding: 15px; border: none; border-radius: 12px; cursor: pointer; font-weight: 600;">
+                        Бас тарту
+                    </button>
+                    <button type="button" onclick="deleteSelected()" style="flex: 1; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 15px; border: none; border-radius: 12px; cursor: pointer; font-weight: 600;" id="deleteSelectedBtn" disabled>
+                        🗑️ Таңдалғанды өшіру
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allPerfumes = [];
+        let filteredPerfumes = [];
+        let selectedForDeletion = new Set();
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPerfumes();
+        });
+
+        // Navigation Functions - Open separate pages for add/update
+        function navigateToAddPerfume() {
+            // Add smooth fade out transition
+            document.body.classList.add('fade-out');
+            
+            // Navigate after brief transition
+            setTimeout(() => {
+                window.location.href = '/admin/add-perfume';
+            }, 150);
+        }
+
+        function navigateToUpdatePerfume(perfumeId) {
+            // Add smooth fade out transition
+            document.body.classList.add('fade-out');
+            
+            // Navigate after brief transition
+            setTimeout(() => {
+                window.location.href = `/admin/update-perfume?id=${perfumeId}`;
+            }, 150);
+        }
+
+        // Load perfumes from API
+        async function loadPerfumes() {
+            try {
+                showLoading();
+                const response = await fetch('/api/parfumes');
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch perfumes');
+                }
+                
+                allPerfumes = await response.json() || [];
+                filteredPerfumes = [...allPerfumes];
+                updateStats();
+                displayPerfumes();
+                
+            } catch (error) {
+                console.error('Error loading perfumes:', error);
+                showError('Парфюмдерді жүктеу кезінде қате пайда болды');
+                showErrorState();
+            }
+        }
+
+        function displayPerfumes() {
+            const container = document.getElementById('perfumesDisplay');
+            
+            if (filteredPerfumes.length === 0) {
+                if (allPerfumes.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">🌸</div>
+                            <div class="empty-title">Парфюм жоқ</div>
+                            <div class="empty-description">Алғашқы парфюмыңызды қосу арқылы коллекцияңызды бастаңыз!</div>
+                            <button onclick="navigateToAddPerfume()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; margin-top: 20px; padding: 15px 30px; border: none; border-radius: 12px; cursor: pointer; font-weight: 600;">
+                                ➕ Алғашқы парфюмді қосу
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-icon">🔍</div>
+                            <div class="empty-title">Іздеу нәтижесі жоқ</div>
+                            <div class="empty-description">Басқа кілт сөзбен іздеп көріңіз</div>
+                        </div>
+                    `;
+                }
+                return;
+            }
+
+            const perfumeCards = filteredPerfumes.map(perfume => `
+                <div class="perfume-card">
+                    <img src="/photo/${perfume.PhotoPath || 'default.jpg'}" 
+                         alt="${perfume.NameParfume}" 
+                         class="perfume-image" 
+                         onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjFmNWY5Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IiM2Yjc4ODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj7auNGB2YPRgNC10YIg2LjQvtGC0LfQsNGC8KCUi8g8L3RleHQ+PC9zdmc+'">
+                    
+                    <div class="perfume-content">
+                        <div class="perfume-header">
+                            <div class="perfume-name">${perfume.NameParfume}</div>
+                            <div class="perfume-price">${perfume.Price}₸</div>
+                        </div>
+                        
+                        <div class="perfume-meta">
+                            <span class="perfume-sex sex-${perfume.Sex.toLowerCase()}">
+                                ${perfume.Sex === 'Male' ? '👨 Ерлерге' : perfume.Sex === 'Female' ? '👩 Әйелдерге' : '👥 Универсалды'}
+                            </span>
+                        </div>
+                        
+                        <div class="perfume-description">${perfume.Description}</div>
+                        
+                        <div class="card-actions">
+                            <button class="btn-card btn-edit" onclick="navigateToUpdatePerfume('${perfume.Id}')">
+                                ✏️ Өзгерту
+                            </button>
+                            <button class="btn-card btn-delete" onclick="deleteSingle('${perfume.Id}', '${perfume.NameParfume}')">
+                                🗑️ Өшіру
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = `<div class="perfumes-grid">${perfumeCards}</div>`;
+        }
+
+        function updateStats() {
+            const total = allPerfumes.length;
+            const male = allPerfumes.filter(p => p.Sex === 'Male').length;
+            const female = allPerfumes.filter(p => p.Sex === 'Female').length;
+            const unisex = allPerfumes.filter(p => p.Sex === 'Unisex').length;
+
+            document.getElementById('totalStat').textContent = total;
+            document.getElementById('maleStat').textContent = male;
+            document.getElementById('femaleStat').textContent = female;
+            document.getElementById('unisexStat').textContent = unisex;
+        }
+
+        function searchPerfumes() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            
+            if (query === '') {
+                filteredPerfumes = [...allPerfumes];
+            } else {
+                filteredPerfumes = allPerfumes.filter(perfume => 
+                    perfume.NameParfume.toLowerCase().includes(query) ||
+                    perfume.Description.toLowerCase().includes(query) ||
+                    perfume.Sex.toLowerCase().includes(query)
+                );
+            }
+            
+            displayPerfumes();
+        }
+
+        function filterBySex(sex) {
+            // Update active menu item
+            document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+            event.target.closest('.menu-item').classList.add('active');
+            
+            filteredPerfumes = allPerfumes.filter(p => p.Sex === sex);
+            displayPerfumes();
+            
+            // Update search placeholder
+            const searchInput = document.getElementById('searchInput');
+            searchInput.value = '';
+            searchInput.placeholder = `${sex === 'Male' ? 'Ерлер' : sex === 'Female' ? 'Әйелдер' : 'Универсалды'} парфюмін іздеу...`;
+        }
+
+        function showAllPerfumes() {
+            // Update active menu item
+            document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+            event.target.closest('.menu-item').classList.add('active');
+            
+            filteredPerfumes = [...allPerfumes];
+            displayPerfumes();
+            
+            // Reset search
+            const searchInput = document.getElementById('searchInput');
+            searchInput.value = '';
+            searchInput.placeholder = 'Парфюм іздеу...';
+        }
+
+        function showLoading() {
+            document.getElementById('perfumesDisplay').innerHTML = `
+                <div class="loading-container">
+                    <div class="spinner"></div>
+                    <div>Парфюмдер жүктелуде...</div>
+                </div>
+            `;
+        }
+
+        function showErrorState() {
+            document.getElementById('perfumesDisplay').innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">⚠️</div>
+                    <div class="empty-title">Қате пайда болды</div>
+                    <div class="empty-description">Желілік байланысты тексеріп, қайталап көріңіз</div>
+                    <button onclick="loadPerfumes()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin-top: 20px; padding: 15px 30px; border: none; border-radius: 12px; cursor: pointer; font-weight: 600;">
+                        🔄 Қайталау
+                    </button>
+                </div>
+            `;
+        }
+
+        // Bulk Delete Modal Functions
+        async function openBulkDeleteModal() {
+            document.getElementById('deleteModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            selectedForDeletion.clear();
+            await loadDeleteTable();
+        }
+
+        function closeBulkDeleteModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            selectedForDeletion.clear();
+        }
+
+        async function loadDeleteTable() {
+            const container = document.getElementById('deleteTableContainer');
+            
+            if (allPerfumes.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-title">Өшіру үшін парфюм жоқ</div>
+                        <p>Алдымен парфюм қосыңыз!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const tableRows = allPerfumes.map(perfume => `
+                <tr>
+                    <td>
+                        <input type="checkbox" class="checkbox" onchange="toggleDeleteSelection('${perfume.Id}')">
+                    </td>
+                    <td>
+                        <img src="/photo/${perfume.PhotoPath || 'default.jpg'}" 
+                             class="table-image" 
+                             onerror="this.style.opacity='0.3'">
+                    </td>
+                    <td>
+                        <strong>${perfume.NameParfume}</strong>
+                    </td>
+                    <td>
+                        <span class="perfume-sex sex-${perfume.Sex.toLowerCase()}">
+                            ${perfume.Sex === 'Male' ? '👨 Ерлерге' : perfume.Sex === 'Female' ? '👩 Әйелдерге' : '👥 Универсалды'}
+                        </span>
+                    </td>
+                    <td><strong>${perfume.Price}₸</strong></td>
+                    <td>
+                        <button class="btn-card btn-delete" onclick="deleteSingle('${perfume.Id}', '${perfume.NameParfume}')" style="white-space: nowrap;">
+                            🗑️ Өшіру
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+
+            container.innerHTML = `
+                <table class="delete-table">
+                    <thead>
+                        <tr>
+                            <th>
+                                <input type="checkbox" class="checkbox" onchange="toggleAllSelection()" id="selectAll">
+                            </th>
+                            <th>Сурет</th>
+                            <th>Атауы</th>
+                            <th>Жынысы</th>
+                            <th>Бағасы</th>
+                            <th>Әрекет</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function toggleDeleteSelection(perfumeId) {
+            if (selectedForDeletion.has(perfumeId)) {
+                selectedForDeletion.delete(perfumeId);
+            } else {
+                selectedForDeletion.add(perfumeId);
+            }
+            updateDeleteButton();
+        }
+
+        function toggleAllSelection() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('#deleteTableContainer tbody input[type="checkbox"]');
+            
+            selectedForDeletion.clear();
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAll.checked;
+                if (selectAll.checked) {
+                    const row = checkbox.closest('tr');
+                    const deleteBtn = row.querySelector('.btn-delete');
+                    const onClick = deleteBtn.getAttribute('onclick');
+                    const perfumeId = onClick.match(/'([^']+)'/)[1];
+                    selectedForDeletion.add(perfumeId);
+                }
+            });
+            
+            updateDeleteButton();
+        }
+
+        function updateDeleteButton() {
+            const deleteBtn = document.getElementById('deleteSelectedBtn');
+            deleteBtn.disabled = selectedForDeletion.size === 0;
+            deleteBtn.textContent = selectedForDeletion.size > 0 
+                ? `🗑️ Таңдалғанды өшіру (${selectedForDeletion.size})` 
+                : '🗑️ Таңдалғанды өшіру';
+        }
+
+        async function deleteSingle(perfumeId, perfumeName) {
+            if (!confirm(`"${perfumeName}" парфюмін өшіруге сенімдісіз бе?\n\nБұл әрекетті кері қайтару мүмкін емес.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/delete-parfume/${perfumeId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    showSuccess('Парфюм сәтті өшірілді!');
+                    await loadPerfumes();
+                    closeBulkDeleteModal();
+                } else {
+                    const error = await response.text();
+                    showError(`Өшіру қатесі: ${error}`);
+                }
+            } catch (error) {
+                console.error('Error deleting perfume:', error);
+                showError('Желілік қате. Қайталап көріңіз.');
+            }
+        }
+
+        async function deleteSelected() {
+            if (selectedForDeletion.size === 0) return;
+            
+            const count = selectedForDeletion.size;
+            if (!confirm(`${count} парфюмді өшіруге сенімдісіз бе?\n\nБұл әрекетті кері қайтару мүмкін емес.`)) {
+                return;
+            }
+            
+            try {
+                const deletePromises = Array.from(selectedForDeletion).map(perfumeId => 
+                    fetch(`/api/delete-parfume/${perfumeId}`, { method: 'DELETE' })
+                );
+                
+                const results = await Promise.all(deletePromises);
+                const successful = results.filter(r => r.ok).length;
+                const failed = results.length - successful;
+                
+                if (failed === 0) {
+                    showSuccess(`${successful} парфюм сәтті өшірілді!`);
+                } else {
+                    showError(`${successful} парфюм өшірілді, бірақ ${failed} қате болды.`);
+                }
+                
+                selectedForDeletion.clear();
+                await loadPerfumes();
+                closeBulkDeleteModal();
+                
+            } catch (error) {
+                console.error('Error deleting perfumes:', error);
+                showError('Көпті өшіру кезінде желілік қате.');
+            }
+        }
+
+        // Toast notifications
+        function showSuccess(message) {
+            showToast(message, 'success');
+        }
+
+        function showError(message) {
+            showToast(message, 'error');
+        }
+
+        function showToast(message, type = 'success') {
+            const existingToasts = document.querySelectorAll('.toast');
+            existingToasts.forEach(toast => toast.remove());
+            
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <div class="toast-content">
+                    <div class="toast-icon">${type === 'success' ? '✅' : '❌'}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(event) {
+            if (event.target.classList.contains('modal-overlay')) {
+                closeBulkDeleteModal();
+            }
+        });
+
+        // Handle page reload on return from add/update pages
+        window.addEventListener('focus', function() {
+            // Reload perfumes when returning to this page
+            loadPerfumes();
+        });
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl/Cmd + N for new perfume
+            if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+                e.preventDefault();
+                navigateToAddPerfume();
+            }
+            
+            // Escape to close modal
+            if (e.key === 'Escape') {
+                closeBulkDeleteModal();
+            }
+        });
+    </script>
+</body>
+</html>

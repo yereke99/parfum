@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Парфюм өзгерту</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .app-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        .update-form-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+            max-width: 600px;
+            width: 100%;
+            overflow: hidden;
+            animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .form-header {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .form-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .form-title {
+            font-size: 2rem;
+            font-weight: 300;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .form-subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+        }
+
+        .close-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 3;
+        }
+
+        .close-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .form-body {
+            padding: 40px;
+        }
+
+        /* Current Photo Display */
+        .current-photo-section {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .current-photo-label {
+            display: block;
+            color: #1f2937;
+            margin-bottom: 16px;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .current-photo-container {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        .current-photo {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            border: 3px solid #e5e7eb;
+            transition: all 0.3s ease;
+        }
+
+        .current-photo:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .photo-change-note {
+            color: #6b7280;
+            font-size: 0.9rem;
+            font-style: italic;
+        }
+
+        /* New Photo Upload Section */
+        .photo-section {
+            margin-bottom: 40px;
+        }
+
+        .photo-label {
+            display: block;
+            color: #1f2937;
+            margin-bottom: 16px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+
+        .upload-container {
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .upload-zone {
+            border: 3px dashed #d1d5db;
+            border-radius: 20px;
+            padding: 40px 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-zone:hover {
+            border-color: #f59e0b;
+            background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.15);
+        }
+
+        .upload-zone.dragover {
+            border-color: #f59e0b;
+            background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            color: #9ca3af;
+            transition: all 0.3s ease;
+        }
+
+        .upload-zone:hover .upload-icon {
+            color: #f59e0b;
+            transform: scale(1.1);
+        }
+
+        .upload-text {
+            color: #374151;
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .upload-subtext {
+            color: #6b7280;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .preview-container {
+            margin-top: 24px;
+            text-align: center;
+        }
+
+        .preview-image {
+            max-width: 250px;
+            max-height: 250px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+            border: 4px solid white;
+            transition: all 0.3s ease;
+        }
+
+        .preview-image:hover {
+            transform: scale(1.05);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .remove-image {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 20px;
+            margin-top: 16px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .remove-image:hover {
+            background: #dc2626;
+            transform: scale(1.05);
+        }
+
+        /* Form Fields */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            display: block;
+            color: #374151;
+            margin-bottom: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid #e5e7eb;
+            border-radius: 16px;
+            font-size: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: #f9fafb;
+            font-family: inherit;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #f59e0b;
+            box-shadow: 0 0 25px rgba(245, 158, 11, 0.15);
+            background: white;
+            transform: translateY(-1px);
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        /* Sex Selection */
+        .sex-selection {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 12px;
+        }
+
+        .sex-option {
+            padding: 18px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 16px;
+            background: #f9fafb;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sex-option::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.5s;
+        }
+
+        .sex-option:hover::before {
+            left: 100%;
+        }
+
+        .sex-option:hover {
+            border-color: #f59e0b;
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.15);
+        }
+
+        .sex-option.active {
+            border-color: #f59e0b;
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.3);
+        }
+
+        .sex-icon {
+            font-size: 1.4rem;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        /* Action Buttons */
+        .form-actions {
+            display: flex;
+            gap: 16px;
+            margin-top: 40px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 18px 24px;
+            border: none;
+            border-radius: 16px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transition: all 0.5s;
+            transform: translate(-50%, -50%);
+        }
+
+        .btn:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-cancel {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-cancel:hover {
+            background: #4b5563;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(107, 114, 128, 0.3);
+        }
+
+        .btn-update {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            position: relative;
+        }
+
+        .btn-update:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(245, 158, 11, 0.4);
+        }
+
+        .btn-update:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Loading State */
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Success/Error Messages */
+        .message {
+            padding: 16px 20px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            font-weight: 500;
+            text-align: center;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-success {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .message-error {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        /* Floating Background Elements */
+        .bg-decoration {
+            position: absolute;
+            pointer-events: none;
+            opacity: 0.1;
+            z-index: 0;
+        }
+
+        .decoration-1 {
+            top: 10%;
+            right: 10%;
+            font-size: 6rem;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .decoration-2 {
+            bottom: 15%;
+            left: 5%;
+            font-size: 4rem;
+            animation: float 8s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 10px;
+            }
+
+            .update-form-card {
+                border-radius: 20px;
+            }
+
+            .form-body {
+                padding: 24px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .sex-selection {
+                grid-template-columns: 1fr;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+
+            .upload-zone {
+                padding: 30px 20px;
+            }
+
+            .form-title {
+                font-size: 1.6rem;
+            }
+
+            .upload-icon {
+                font-size: 3rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .form-body {
+                padding: 20px;
+            }
+
+            .upload-zone {
+                padding: 25px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Decorations -->
+    <div class="bg-decoration decoration-1">✏️</div>
+    <div class="bg-decoration decoration-2">🔄</div>
+
+    <div class="app-container">
+        <div class="update-form-card">
+            <div class="form-header">
+                <button class="close-button" onclick="goBack()" title="Кері қайту">×</button>
+                <div class="header-content">
+                    <h1 class="form-title">Парфюм өзгерту</h1>
+                    <p class="form-subtitle">Парфюм ақпараттарын жаңартыңыз</p>
+                </div>
+            </div>
+
+            <div class="form-body">
+                <div id="messageContainer"></div>
+
+                <!-- Current Photo Section -->
+                <div class="current-photo-section">
+                    <label class="current-photo-label">📷 Қазіргі сурет</label>
+                    <div class="current-photo-container">
+                        <img id="currentPhoto" class="current-photo" src="" alt="Current perfume photo">
+                    </div>
+                    <div class="photo-change-note">Суретті өзгерту үшін төменде жаңа сурет таңдаңыз</div>
+                </div>
+
+                <form id="updatePerfumeForm" onsubmit="handleSubmit(event)">
+                    <input type="hidden" id="perfumeId" name="id">
+                    
+                    <!-- New Photo Upload Section -->
+                    <div class="photo-section">
+                        <label class="photo-label">📸 Жаңа сурет (қалаған жағдайда)</label>
+                        <div class="upload-container">
+                            <div class="upload-zone" onclick="triggerFileInput()">
+                                <div class="upload-icon">📷</div>
+                                <div class="upload-text">Жаңа суретті осы жерге тартып әкеліңіз</div>
+                                <div class="upload-subtext">немесе таңдау үшін басыңыз<br>
+                                <small>JPG, PNG, WebP форматтары • Максимум 10МБ</small></div>
+                            </div>
+                            <input type="file" id="photoInput" name="photo" accept="image/*" class="file-input" onchange="handleFileSelect(event)">
+                        </div>
+                        
+                        <div class="preview-container" id="previewContainer" style="display: none;">
+                            <img id="previewImage" class="preview-image" alt="New preview">
+                            <br>
+                            <button type="button" class="remove-image" onclick="removeNewImage()">
+                                🗑️ Жаңа суретті өшіру
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Form Fields -->
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label" for="perfumeName">
+                                ✨ Парфюм атауы
+                            </label>
+                            <input type="text" id="perfumeName" name="name" class="form-input" required 
+                                   placeholder="Мысалы: Chanel No. 5">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label" for="perfumePrice">
+                                💰 Бағасы (тенге)
+                            </label>
+                            <input type="number" id="perfumePrice" name="price" class="form-input" min="0" required 
+                                   placeholder="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">👥 Кімге арналған</label>
+                        <div class="sex-selection">
+                            <div class="sex-option" onclick="selectSex('Male')" data-sex="Male">
+                                <span class="sex-icon">👨</span>
+                                Ерлерге
+                            </div>
+                            <div class="sex-option" onclick="selectSex('Female')" data-sex="Female">
+                                <span class="sex-icon">👩</span>
+                                Әйелдерге
+                            </div>
+                            <div class="sex-option" onclick="selectSex('Unisex')" data-sex="Unisex">
+                                <span class="sex-icon">👥</span>
+                                Универсалды
+                            </div>
+                        </div>
+                        <input type="hidden" id="perfumeSex" name="sex" required>
+                    </div>
+                    
+                    <div class="form-group full-width">
+                        <label class="form-label" for="perfumeDescription">
+                            📝 Сипаттамасы
+                        </label>
+                        <textarea id="perfumeDescription" name="description" class="form-input form-textarea" required
+                                  placeholder="Парфюмнің иісі мен сипаттамасын жазыңыз...&#10;Мысалы: Жасмин мен розаның хош иісімен, ұзақ уақыт сақталатын нәзік хош иіс"></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-cancel" onclick="goBack()">
+                            ← Кері қайту
+                        </button>
+                        <button type="submit" class="btn btn-update" id="updateButton">
+                            ✏️ Өзгерістерді сақтау
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedNewFile = null;
+        let perfumeId = null;
+
+        // Get perfume ID from URL parameters
+        function getPerfumeIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
+
+        // Initialize and load perfume data
+        document.addEventListener('DOMContentLoaded', function() {
+            perfumeId = getPerfumeIdFromUrl();
+            if (!perfumeId) {
+                showMessage('Парфюм ID табылмады!', 'error');
+                setTimeout(() => goBack(), 2000);
+                return;
+            }
+            
+            loadPerfumeData(perfumeId);
+            setupDragAndDrop();
+        });
+
+        // Load existing perfume data
+        async function loadPerfumeData(id) {
+            try {
+                showMessage('Парфюм деректері жүктелуде...', 'success');
+                
+                const response = await fetch(`/api/parfume/${id}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch perfume data');
+                }
+                
+                const perfume = await response.json();
+                
+                // Fill form with existing data
+                document.getElementById('perfumeId').value = perfume.Id;
+                document.getElementById('perfumeName').value = perfume.NameParfume;
+                document.getElementById('perfumePrice').value = perfume.Price;
+                document.getElementById('perfumeDescription').value = perfume.Description;
+                document.getElementById('perfumeSex').value = perfume.Sex;
+                
+                // Set active sex button
+                document.querySelectorAll('.sex-option').forEach(option => {
+                    option.classList.remove('active');
+                    if (option.dataset.sex === perfume.Sex) {
+                        option.classList.add('active');
+                    }
+                });
+                
+                // Show current photo
+                if (perfume.PhotoPath) {
+                    const currentPhoto = document.getElementById('currentPhoto');
+                    currentPhoto.src = `/photo/${perfume.PhotoPath}`;
+                    currentPhoto.onerror = function() {
+                        this.style.display = 'none';
+                        document.querySelector('.photo-change-note').textContent = 'Ағымдағы сурет жоқ. Жаңа сурет қосыңыз.';
+                    };
+                } else {
+                    document.getElementById('currentPhoto').style.display = 'none';
+                    document.querySelector('.photo-change-note').textContent = 'Ағымдағы сурет жоқ. Жаңа сурет қосыңыз.';
+                }
+                
+                document.getElementById('messageContainer').innerHTML = '';
+                
+            } catch (error) {
+                console.error('Error loading perfume:', error);
+                showMessage('Парфюм деректерін жүктеу мүмкін болмады!', 'error');
+                setTimeout(() => goBack(), 3000);
+            }
+        }
+
+        // File Upload Functionality
+        function triggerFileInput() {
+            document.getElementById('photoInput').click();
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Validate file
+            if (!file.type.startsWith('image/')) {
+                showMessage('Тек сурет файлдарын таңдаңыз!', 'error');
+                return;
+            }
+
+            if (file.size > 10 * 1024 * 1024) {
+                showMessage('Файл өлшемі 10МБ аспауы керек!', 'error');
+                return;
+            }
+
+            selectedNewFile = file;
+            showNewImagePreview(file);
+        }
+
+        function showNewImagePreview(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const previewContainer = document.getElementById('previewContainer');
+                const previewImage = document.getElementById('previewImage');
+                
+                previewImage.src = e.target.result;
+                previewContainer.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeNewImage() {
+            selectedNewFile = null;
+            document.getElementById('photoInput').value = '';
+            document.getElementById('previewContainer').style.display = 'none';
+        }
+
+        // Sex Selection
+        function selectSex(sex) {
+            // Remove active class from all options
+            document.querySelectorAll('.sex-option').forEach(option => {
+                option.classList.remove('active');
+            });
+            
+            // Add active class to selected option
+            event.target.classList.add('active');
+            document.getElementById('perfumeSex').value = sex;
+        }
+
+        // Form Submission
+        async function handleSubmit(event) {
+            event.preventDefault();
+            
+            if (!document.getElementById('perfumeSex').value) {
+                showMessage('Парфюм кімге арналғанын таңдаңыз!', 'error');
+                return;
+            }
+
+            const updateButton = document.getElementById('updateButton');
+            updateButton.disabled = true;
+            updateButton.classList.add('btn-loading');
+            updateButton.textContent = 'Өзгертілуде...';
+
+            try {
+                const formData = new FormData(event.target);
+                const perfumeId = document.getElementById('perfumeId').value;
+                
+                const response = await fetch(`/api/update-parfume/${perfumeId}`, {
+                    method: 'PUT',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    showMessage('🎉 Парфюм сәтті өзгертілді!', 'success');
+                    
+                    // Auto-redirect back to main page after 1.5 seconds
+                    setTimeout(() => {
+                        window.location.href = '/admin';
+                    }, 1500);
+                } else {
+                    const error = await response.text();
+                    showMessage(`❌ Қате: ${error}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error updating perfume:', error);
+                showMessage('❌ Желілік қате. Интернет байланысын тексеріңіз.', 'error');
+            } finally {
+                updateButton.disabled = false;
+                updateButton.classList.remove('btn-loading');
+                updateButton.textContent = '✏️ Өзгерістерді сақтау';
+            }
+        }
+
+        // Utility Functions
+        function showMessage(text, type) {
+            const container = document.getElementById('messageContainer');
+            container.innerHTML = `<div class="message message-${type}">${text}</div>`;
+            
+            // Auto-hide success messages (except the final success)
+            if (type === 'success' && !text.includes('сәтті өзгертілді')) {
+                setTimeout(() => {
+                    container.innerHTML = '';
+                }, 3000);
+            }
+        }
+
+        function goBack() {
+            if (confirm('Өзгерістер сақталмайды. Шынымен кері қайтасыз ба?')) {
+                window.location.href = '/admin';
+            }
+        }
+
+        // Drag and Drop Functionality
+        function setupDragAndDrop() {
+            const uploadZone = document.querySelector('.upload-zone');
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadZone.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadZone.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadZone.addEventListener(eventName, unhighlight, false);
+            });
+
+            function highlight(e) {
+                uploadZone.classList.add('dragover');
+            }
+
+            function unhighlight(e) {
+                uploadZone.classList.remove('dragover');
+            }
+
+            uploadZone.addEventListener('drop', handleDrop, false);
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+
+                if (files.length > 0) {
+                    document.getElementById('photoInput').files = files;
+                    handleFileSelect({ target: { files: files } });
+                }
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Escape to go back
+            if (e.key === 'Escape') {
+                goBack();
+            }
+            
+            // Ctrl/Cmd + S to save
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                document.getElementById('updatePerfumeForm').dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // Add loading animation to page
+        window.addEventListener('load', function() {
+            document.body.style.opacity = '0';
+            document.body.style.transition = 'opacity 0.5s ease';
+            
+            setTimeout(() => {
+                document.body.style.opacity = '1';
+            }, 100);
+        });
+    </script>
+</body>
+</html>

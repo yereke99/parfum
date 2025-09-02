@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"parfum/config"
 	"parfum/internal/handler"
+	"parfum/traits/database"
 	"parfum/traits/logger"
 	"syscall"
 
@@ -34,9 +35,21 @@ func main() {
 	}
 	defer db.Close()
 
+	// Test database connection
+	if err := db.Ping(); err != nil {
+		zapLogger.Error("error pinging database", zap.Error(err))
+		return
+	}
+
+	// Create tables
+	if err := database.CreateTables(db); err != nil {
+		zapLogger.Error("error creating tables", zap.Error(err))
+		return
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 
-	handle := handler.NewHandler(cfg, zapLogger, ctx)
+	handle := handler.NewHandler(cfg, zapLogger, ctx, db)
 
 	opts := []bot.Option{}
 	b, err := bot.New(cfg.Token, opts...)
@@ -49,7 +62,7 @@ func main() {
 	signal.Notify(stop, os.Interrupt, syscall.SIGINT)
 	go func() {
 		<-stop
-		zapLogger.Info("Bot stoppped successfully")
+		zapLogger.Info("Bot stopped successfully")
 		cancel()
 	}()
 
@@ -57,5 +70,6 @@ func main() {
 
 	zapLogger.Info("Starting web server", zap.String("port", cfg.Port))
 	zapLogger.Info("Bot started successfully")
+	zapLogger.Info("Admin panel available at: /admin")
 	b.Start(ctx)
 }

@@ -1,0 +1,1969 @@
+<html lang="kz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Lumen Cosmetics | Парфюм каталогы</title>
+  
+  <style>
+    :root {
+      /* Luxury Lumen color system - Black & Gold */
+      --lumen-black: #000000;
+      --lumen-dark: #0a0a0a;
+      --lumen-gray-900: #111111;
+      --lumen-gray-800: #1a1a1a;
+      --lumen-gray-700: #262626;
+      --lumen-gray-600: #404040;
+      --lumen-gray-500: #5a5a5a;
+      --lumen-gray-400: #737373;
+      --lumen-white: #ffffff;
+      
+      --lumen-gold: #ffd700;
+      --lumen-gold-light: #ffe135;
+      --lumen-gold-dark: #cc9900;
+      --lumen-gold-glow: rgba(255, 215, 0, 0.3);
+      
+      /* Luxury theme */
+      --bg-primary: var(--lumen-black);
+      --bg-secondary: var(--lumen-gray-900);
+      --bg-card: var(--lumen-gray-800);
+      --text-primary: var(--lumen-white);
+      --text-secondary: var(--lumen-gold);
+      --text-muted: var(--lumen-gray-400);
+      --border-light: var(--lumen-gray-700);
+      --accent: var(--lumen-gold);
+      --accent-hover: var(--lumen-gold-light);
+      
+      --shadow-sm: 0 1px 3px rgba(255, 215, 0, 0.1);
+      --shadow-md: 0 4px 6px rgba(255, 215, 0, 0.15);
+      --shadow-lg: 0 10px 20px rgba(255, 215, 0, 0.2);
+      --shadow-xl: 0 20px 40px rgba(255, 215, 0, 0.25);
+      --shadow-gold: 0 0 20px var(--lumen-gold-glow);
+      
+      --tg-viewport-height: 100vh;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      height: 100%;
+      overflow-x: hidden;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      height: var(--tg-viewport-height);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* App Container */
+    .app-container {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Header - Luxury Black & Gold */
+    .header {
+      background: linear-gradient(135deg, var(--lumen-black) 0%, var(--lumen-gray-900) 100%);
+      padding: 16px;
+      border-bottom: 1px solid var(--lumen-gold);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 10px rgba(255, 215, 0, 0.1);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--lumen-gold);
+      text-shadow: 0 0 10px var(--lumen-gold-glow);
+      letter-spacing: 2px;
+    }
+
+    .header-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Language Switch - Gold accent */
+    .lang-switch {
+      background: var(--lumen-gray-800);
+      border-radius: 100px;
+      display: flex;
+      padding: 3px;
+      border: 1px solid var(--lumen-gold);
+    }
+
+    .lang-btn {
+      padding: 6px 12px;
+      border: none;
+      background: transparent;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--text-muted);
+    }
+
+    .lang-btn.active {
+      background: var(--lumen-gold);
+      color: var(--lumen-black);
+      text-shadow: none;
+    }
+
+    /* Cart Button - Gold accent */
+    .cart-btn {
+      position: relative;
+      background: linear-gradient(135deg, var(--lumen-gold), var(--lumen-gold-light));
+      color: var(--lumen-black);
+      border: none;
+      padding: 10px;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      box-shadow: var(--shadow-gold);
+    }
+
+    .cart-btn:active {
+      transform: scale(0.95);
+    }
+
+    .cart-badge {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: var(--lumen-black);
+      color: var(--lumen-gold);
+      border: 2px solid var(--lumen-gold);
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+    }
+
+    /* Search Bar - Remove bottom border */
+    .search-container {
+      padding: 16px;
+      background: linear-gradient(135deg, var(--lumen-gray-900) 0%, var(--lumen-gray-800) 100%);
+      /* Removed: border-bottom: 1px solid var(--border-light); */
+    }
+
+    .search-wrapper {
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 12px 16px 12px 44px;
+      border: 2px solid var(--lumen-gray-700);
+      border-radius: 12px;
+      font-size: 16px;
+      background: var(--lumen-gray-800);
+      color: var(--text-primary);
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    .search-input:focus {
+      border-color: var(--lumen-gold);
+      background: var(--lumen-gray-700);
+      box-shadow: 0 0 10px var(--lumen-gold-glow);
+    }
+
+    .search-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--lumen-gold);
+      font-size: 18px;
+    }
+
+    /* Filter Pills - Gold accented */
+    .filter-container {
+      padding: 0 16px 16px;
+      background: linear-gradient(135deg, var(--lumen-gray-900) 0%, var(--lumen-gray-800) 100%);
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .filter-pill {
+      padding: 8px 16px;
+      background: var(--lumen-gray-700);
+      border: 1px solid var(--lumen-gray-600);
+      border-radius: 100px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      flex-shrink: 0;
+      color: var(--text-primary);
+    }
+
+    .filter-pill:hover {
+      background: var(--lumen-gray-600);
+      border-color: var(--lumen-gold);
+    }
+
+    .filter-pill.active {
+      background: var(--lumen-gold);
+      color: var(--lumen-black);
+      border-color: var(--lumen-gold);
+      box-shadow: 0 0 10px var(--lumen-gold-glow);
+    }
+
+    /* Product List - Dark luxury theme */
+    .product-list {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      background: var(--bg-primary);
+    }
+
+    .product-count {
+      padding: 16px;
+      font-size: 14px;
+      color: var(--lumen-gold);
+      border-bottom: 1px solid var(--border-light);
+      background: var(--lumen-gray-900);
+    }
+
+    .product-item {
+      display: flex;
+      padding: 16px;
+      border-bottom: 1px solid var(--border-light);
+      cursor: pointer;
+      transition: all 0.3s;
+      gap: 12px;
+      background: var(--bg-card);
+      margin: 8px;
+      border-radius: 12px;
+      border: 1px solid var(--lumen-gray-700);
+    }
+
+    .product-item:hover {
+      background: var(--lumen-gray-700);
+      border-color: var(--lumen-gold);
+      box-shadow: 0 4px 20px rgba(255, 215, 0, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .product-item:active {
+      background: var(--lumen-gray-600);
+      transform: translateY(0);
+    }
+
+    .product-image {
+      width: 80px;
+      height: 80px;
+      border-radius: 12px;
+      background: var(--lumen-gray-700);
+      flex-shrink: 0;
+      border: 1px solid var(--lumen-gold);
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .product-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: inherit;
+      display: none;
+    }
+
+    .product-image .image-placeholder {
+      font-size: 32px;
+      color: var(--lumen-gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+    }
+
+    .product-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .product-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.3;
+    }
+
+    .product-sex {
+      font-size: 12px;
+      color: var(--lumen-black);
+      background: var(--lumen-gold);
+      padding: 2px 8px;
+      border-radius: 100px;
+      display: inline-block;
+      width: fit-content;
+      font-weight: 600;
+    }
+
+    .product-description {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .product-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 8px;
+      position: relative;
+    }
+
+    .product-price {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--lumen-gold);
+      text-shadow: 0 0 5px var(--lumen-gold-glow);
+    }
+
+    .product-price-unit {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--text-muted);
+    }
+
+    .add-btn {
+      background: linear-gradient(135deg, var(--lumen-gold), var(--lumen-gold-light));
+      color: var(--lumen-black);
+      border: none;
+      padding: 8px 16px;
+      border-radius: 100px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);
+      position: relative;
+    }
+
+    .add-btn:hover {
+      background: linear-gradient(135deg, var(--lumen-gold-light), var(--lumen-gold));
+      transform: translateY(-1px);
+      box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+    }
+
+    .add-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* Cart quantity indicator on product */
+    .product-cart-indicator {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: var(--lumen-black);
+      color: var(--lumen-gold);
+      border: 2px solid var(--lumen-gold);
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 24px;
+      z-index: 5;
+    }
+
+    /* Product Detail Modal - Fixed for mobile */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(10px);
+    }
+
+    .modal {
+      background: linear-gradient(135deg, var(--lumen-gray-900), var(--lumen-gray-800));
+      border: 1px solid var(--lumen-gold);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 400px;
+      max-height: 85vh;
+      overflow: hidden;
+      animation: modalSlideUp 0.3s ease;
+      box-shadow: 0 20px 40px rgba(255, 215, 0, 0.2);
+      position: relative;
+    }
+
+    .modal-header {
+      position: relative;
+      padding: 0;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 32px;
+      height: 32px;
+      background: var(--lumen-gray-700);
+      border: 1px solid var(--lumen-gold);
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: var(--lumen-gold);
+      transition: all 0.2s;
+      z-index: 101;
+    }
+
+    .modal-close:hover {
+      background: var(--lumen-gold);
+      color: var(--lumen-black);
+    }
+
+    .modal-content {
+      padding: 20px;
+      max-height: calc(85vh - 40px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .modal-image {
+      width: 100%;
+      height: 250px;
+      border-radius: 16px;
+      background: var(--lumen-gray-700);
+      margin-bottom: 16px;
+      border: 1px solid var(--lumen-gold);
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: inherit;
+      display: none;
+    }
+
+    .modal-image .image-placeholder {
+      font-size: 48px;
+      color: var(--lumen-gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    .modal-sex {
+      font-size: 14px;
+      color: var(--lumen-black);
+      background: var(--lumen-gold);
+      padding: 4px 12px;
+      border-radius: 100px;
+      display: inline-block;
+      margin-bottom: 16px;
+      font-weight: 600;
+    }
+
+    .modal-description {
+      font-size: 16px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+
+    .modal-price {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--lumen-gold);
+      margin-bottom: 20px;
+      text-shadow: 0 0 10px var(--lumen-gold-glow);
+    }
+
+    .modal-add-btn {
+      background: linear-gradient(135deg, var(--lumen-gold), var(--lumen-gold-light));
+      color: var(--lumen-black);
+      border: none;
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3);
+    }
+
+    .modal-add-btn:hover {
+      background: linear-gradient(135deg, var(--lumen-gold-light), var(--lumen-gold));
+      transform: translateY(-1px);
+      box-shadow: 0 6px 25px rgba(255, 215, 0, 0.4);
+    }
+
+    .modal-add-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* Cart Panel - Luxury black & gold */
+    .cart-panel {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(135deg, var(--lumen-gray-900), var(--lumen-gray-800));
+      border: 1px solid var(--lumen-gold);
+      border-radius: 20px 20px 0 0;
+      box-shadow: 0 -4px 20px rgba(255, 215, 0, 0.2);
+      z-index: 50;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      max-height: 60vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cart-panel.show {
+      transform: translateY(0);
+    }
+
+    .cart-handle {
+      width: 36px;
+      height: 4px;
+      background: var(--lumen-gold);
+      border-radius: 2px;
+      margin: 8px auto;
+    }
+
+    .cart-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--lumen-gold);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .cart-header-left {
+      flex: 1;
+    }
+
+    .cart-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--lumen-gold);
+      margin-bottom: 4px;
+      text-shadow: 0 0 10px var(--lumen-gold-glow);
+    }
+
+    .cart-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .cart-close {
+      width: 32px;
+      height: 32px;
+      background: var(--lumen-gray-700);
+      border: 1px solid var(--lumen-gold);
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: var(--lumen-gold);
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .cart-close:hover {
+      background: var(--lumen-gold);
+      color: var(--lumen-black);
+    }
+
+    .cart-items {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 20px;
+    }
+
+    .cart-item {
+      display: flex;
+      align-items: center;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border-light);
+      gap: 12px;
+    }
+
+    .cart-item:last-child {
+      border-bottom: none;
+    }
+
+    .cart-item-image {
+      width: 50px;
+      height: 50px;
+      border-radius: 8px;
+      background: var(--lumen-gray-700);
+      flex-shrink: 0;
+      border: 1px solid var(--lumen-gold);
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cart-item-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: inherit;
+    }
+
+    .cart-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .cart-item-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .cart-item-price {
+      font-size: 14px;
+      color: var(--lumen-gold);
+    }
+
+    .cart-item-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .quantity-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .quantity-btn {
+      width: 28px;
+      height: 28px;
+      background: var(--lumen-gray-700);
+      border: 1px solid var(--lumen-gold);
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s;
+      color: var(--lumen-gold);
+    }
+
+    .quantity-btn:hover {
+      background: var(--lumen-gold);
+      color: var(--lumen-black);
+    }
+
+    .quantity-btn:active {
+      transform: scale(0.95);
+    }
+
+    .quantity-value {
+      font-size: 14px;
+      font-weight: 600;
+      min-width: 20px;
+      text-align: center;
+      color: var(--text-primary);
+    }
+
+    .cart-footer {
+      padding: 20px;
+      border-top: 1px solid var(--lumen-gold);
+      background: var(--lumen-gray-900);
+    }
+
+    .cart-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .cart-total-label {
+      font-size: 16px;
+      color: var(--text-muted);
+    }
+
+    .cart-total-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--lumen-gold);
+      text-shadow: 0 0 10px var(--lumen-gold-glow);
+    }
+
+    .order-btn {
+      background: linear-gradient(135deg, var(--lumen-gold), var(--lumen-gold-light));
+      color: var(--lumen-black);
+      border: none;
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.2s;
+      box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3);
+    }
+
+    .order-btn:hover {
+      background: linear-gradient(135deg, var(--lumen-gold-light), var(--lumen-gold));
+      transform: translateY(-1px);
+      box-shadow: 0 6px 25px rgba(255, 215, 0, 0.4);
+    }
+
+    .order-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* Loading States - Gold accented */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      color: var(--lumen-gold);
+      background: var(--bg-primary);
+    }
+
+    .loading-spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid var(--lumen-gray-600);
+      border-top-color: var(--lumen-gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 12px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      text-align: center;
+      background: var(--bg-primary);
+    }
+
+    .empty-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.7;
+      color: var(--lumen-gold);
+    }
+
+    .empty-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .empty-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    /* Quick Order Button - Luxury gold */
+    .quick-order-btn {
+      position: fixed;
+      bottom: 20px;
+      left: 16px;
+      right: 16px;
+      background: linear-gradient(135deg, var(--lumen-gold), var(--lumen-gold-light));
+      color: var(--lumen-black);
+      border: none;
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      z-index: 40;
+      box-shadow: 0 10px 30px rgba(255, 215, 0, 0.4);
+      transition: all 0.3s;
+      transform: translateY(100px);
+    }
+
+    .quick-order-btn.show {
+      transform: translateY(0);
+    }
+
+    .quick-order-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* Utility Classes */
+    .hidden {
+      display: none !important;
+    }
+
+    /* Mobile modal optimizations */
+    @media (max-width: 480px) {
+      .header {
+        padding: 12px 16px;
+      }
+
+      .header-title {
+        font-size: 18px;
+      }
+
+      .product-item {
+        padding: 12px 16px;
+      }
+
+      .product-image {
+        width: 70px;
+        height: 70px;
+      }
+
+      .modal {
+        width: 95%;
+        max-width: 95%;
+        max-height: 90vh;
+        margin: 0;
+        border-radius: 20px;
+      }
+
+      .modal-content {
+        padding: 20px 16px;
+        max-height: calc(90vh - 60px);
+      }
+
+      .modal-image {
+        height: 280px;
+      }
+
+      .cart-panel {
+        max-height: 75vh;
+      }
+    }
+
+    /* Tablet Optimizations */
+    @media (min-width: 768px) and (max-width: 1023px) {
+      .app-container {
+        max-width: 100%;
+        margin: 0 auto;
+      }
+
+      .header {
+        padding: 20px 32px;
+      }
+
+      .header-title {
+        font-size: 24px;
+      }
+
+      .search-container {
+        padding: 20px 32px;
+      }
+
+      .filter-container {
+        padding: 0 32px 20px;
+      }
+
+      /* Two-column product layout for tablets */
+      .product-list {
+        padding: 0 16px;
+      }
+
+      .product-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        padding: 16px 0;
+      }
+
+      .product-item {
+        flex-direction: column;
+        border: 1px solid var(--lumen-gray-700);
+        border-radius: 16px;
+        padding: 16px;
+        margin: 0;
+        background: var(--bg-card);
+      }
+
+      .product-image {
+        width: 100%;
+        height: 120px;
+        margin-bottom: 12px;
+      }
+
+      /* Tablet cart - Fixed positioning */
+      .cart-panel {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        right: auto;
+        bottom: auto;
+        width: 90%;
+        max-width: 500px;
+        max-height: 70vh;
+        border-radius: 16px;
+        transform: translate(-50%, -50%) scale(0.9);
+        opacity: 0;
+        transition: all 0.3s ease;
+        z-index: 60;
+      }
+
+      .cart-panel.show {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+      }
+
+      .modal {
+        max-width: 500px;
+      }
+    }
+
+    /* Desktop/Laptop Optimizations */
+    @media (min-width: 1024px) {
+      body {
+        background: var(--bg-primary);
+      }
+
+      .app-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        box-shadow: 0 0 40px rgba(255, 215, 0, 0.1);
+        min-height: 100vh;
+      }
+
+      .header {
+        padding: 24px 40px;
+      }
+
+      .header-title {
+        font-size: 28px;
+      }
+
+      .search-container {
+        padding: 24px 40px;
+      }
+
+      .filter-container {
+        padding: 0 40px 24px;
+        justify-content: center;
+      }
+
+      /* Three-column product layout for desktop */
+      .product-list {
+        padding: 0 24px;
+      }
+
+      .product-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        padding: 20px 0;
+      }
+
+      .product-item {
+        flex-direction: column;
+        border: 1px solid var(--lumen-gray-700);
+        border-radius: 20px;
+        padding: 20px;
+        margin: 0;
+        background: var(--bg-card);
+        transition: all 0.3s ease;
+      }
+
+      .product-item:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 30px rgba(255, 215, 0, 0.2);
+      }
+
+      .product-image {
+        width: 100%;
+        height: 160px;
+        margin-bottom: 16px;
+      }
+
+      .product-actions {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+      }
+
+      .add-btn {
+        justify-content: center;
+        padding: 12px 20px;
+      }
+
+      /* Side cart panel for desktop - Fixed positioning */
+      .cart-panel {
+        position: fixed;
+        top: 80px;
+        right: -420px;
+        bottom: auto;
+        width: 400px;
+        max-width: 400px;
+        max-height: calc(100vh - 120px);
+        border-radius: 16px;
+        border: 1px solid var(--lumen-gold);
+        transform: translateX(0);
+        transition: right 0.3s ease;
+        box-shadow: 0 10px 40px rgba(255, 215, 0, 0.3);
+        z-index: 60;
+      }
+
+      .cart-panel.show {
+        right: 20px;
+      }
+
+      /* Hide quick order button on desktop */
+      .quick-order-btn {
+        display: none;
+      }
+
+      /* Larger modal for desktop */
+      .modal {
+        max-width: 600px;
+        max-height: 70vh;
+      }
+
+      .modal-image {
+        height: 300px;
+      }
+
+      /* Better product count styling */
+      .product-count {
+        text-align: center;
+        padding: 20px;
+        font-size: 16px;
+        grid-column: 1 / -1;
+      }
+    }
+
+    /* Ultra-wide screens */
+    @media (min-width: 1400px) {
+      .app-container {
+        max-width: 1400px;
+      }
+
+      .product-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 24px;
+      }
+
+      .cart-panel {
+        width: 450px;
+        max-width: 450px;
+      }
+    }
+
+    /* High-DPI displays */
+    @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+      .product-image,
+      .cart-item-image,
+      .modal-image {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+      }
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--uber-gray-400);
+      border-radius: 2px;
+    }
+  </style>
+  
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-left">
+        <div>
+          <div class="header-title" id="headerTitle">LUMEN</div>
+          <div class="header-subtitle" id="headerSubtitle">Парфюм каталогы</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="lang-switch">
+          <button class="lang-btn" id="langRu" onclick="setLanguage('ru')">РУС</button>
+          <button class="lang-btn active" id="langKz" onclick="setLanguage('kz')">ҚАЗ</button>
+        </div>
+        <button class="cart-btn" onclick="toggleCart()">
+          🛒
+          <span class="cart-badge hidden" id="cartBadge">0</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="search-container">
+      <div class="search-wrapper">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="search-input" id="searchInput" placeholder="Парфюм іздеу...">
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-container">
+      <button class="filter-pill active" onclick="setFilter('all')" id="filterAll">Барлығы</button>
+      <button class="filter-pill" onclick="setFilter('Male')" id="filterMale">Ерлерге</button>
+      <button class="filter-pill" onclick="setFilter('Female')" id="filterFemale">Әйелдерге</button>
+      <button class="filter-pill" onclick="setFilter('Unisex')" id="filterUnisex">Барлығына</button>
+    </div>
+
+    <!-- Product List -->
+    <div class="product-list" id="productList">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        <span id="loadingText">Парфюмдер жүктелуде...</span>
+      </div>
+    </div>
+
+    <!-- Quick Order Button -->
+    <button class="quick-order-btn" id="quickOrderBtn" onclick="proceedToOrder()">
+      <span id="orderBtnText">Тапсырыс беру</span> • <span id="orderBtnTotal">0 ₸</span>
+    </button>
+
+    <!-- Product Detail Modal -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModal()">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-content" id="modalContent">
+          <!-- Dynamic content -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Cart Panel -->
+    <div class="cart-panel" id="cartPanel">
+      <div class="cart-handle"></div>
+      
+      <div class="cart-header">
+        <div class="cart-header-left">
+          <h2 class="cart-title" id="cartTitle">Себет</h2>
+          <p class="cart-subtitle" id="cartSubtitle">Таңдалған парфюмдер</p>
+        </div>
+        <button class="cart-close" onclick="toggleCart()">✕</button>
+      </div>
+      
+      <div class="cart-items" id="cartItems">
+        <!-- Dynamic cart items -->
+      </div>
+      
+      <div class="cart-footer">
+        <div class="cart-total">
+          <span class="cart-total-label" id="totalLabel">Барлығы:</span>
+          <span class="cart-total-value" id="totalValue">0 ₸</span>
+        </div>
+        <button class="order-btn" onclick="proceedToOrder()" id="cartOrderBtn">
+          Тапсырыс беру
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Global Variables
+    let currentLang = 'kz';
+    let allPerfumes = [];
+    let filteredPerfumes = [];
+    let cart = [];
+    let telegramId = null;
+    let isCartOpen = false;
+    let currentFilter = 'all';
+
+    // Translations
+    const translations = {
+      ru: {
+        title: 'LUMEN COSMETICS',
+        subtitle: 'Каталог парфюмерии',
+        searchPlaceholder: 'Поиск парфюма...',
+        loadingText: 'Загрузка парфюмов...',
+        filterAll: 'Все',
+        filterMale: 'Для мужчин',
+        filterFemale: 'Для женщин',
+        filterUnisex: 'Унисекс',
+        addToCart: 'В корзину',
+        cartTitle: 'Корзина',
+        cartSubtitle: 'Выбранные парфюмы',
+        totalLabel: 'Итого:',
+        orderBtnText: 'Оформить заказ',
+        emptyCartTitle: 'Корзина пуста',
+        emptyCartSubtitle: 'Добавьте парфюмы для заказа',
+        emptySearchTitle: 'Ничего не найдено',
+        emptySearchSubtitle: 'Попробуйте изменить поисковый запрос',
+        items: 'товаров',
+        male: 'Мужской',
+        female: 'Женский',
+        unisex: 'Унисекс',
+        tenge: '₸'
+      },
+      kz: {
+        title: 'LUMEN',
+        subtitle: 'Парфюм каталогы',
+        searchPlaceholder: 'Парфюм іздеу...',
+        loadingText: 'Парфюмдер жүктелуде...',
+        filterAll: 'Барлығы',
+        filterMale: 'Ерлерге',
+        filterFemale: 'Әйелдерге',
+        filterUnisex: 'Барлығына',
+        addToCart: 'Себетке',
+        cartTitle: 'Себет',
+        cartSubtitle: 'Таңдалған парфюмдер',
+        totalLabel: 'Барлығы:',
+        orderBtnText: 'Тапсырыс беру',
+        emptyCartTitle: 'Себет бос',
+        emptyCartSubtitle: 'Тапсырыс беру үшін парфюм қосыңыз',
+        emptySearchTitle: 'Ештеңе табылмады',
+        emptySearchSubtitle: 'Іздеу сөзін өзгертіп көріңіз',
+        items: 'тауар',
+        male: 'Ерлер',
+        female: 'Әйелдер',
+        unisex: 'Барлығына',
+        tenge: '₸'
+      }
+    };
+
+    // Initialize Telegram WebApp
+    function initTelegramWebApp() {
+      console.log('🚀 Initializing Lumen Perfume Catalog...');
+      
+      if (!window.Telegram || !Telegram.WebApp) {
+        console.warn('⚠️ Telegram WebApp not available');
+        return false;
+      }
+
+      try {
+        Telegram.WebApp.ready();
+        Telegram.WebApp.expand();
+        
+        // Get user data
+        if (Telegram.WebApp.initDataUnsafe?.user) {
+          telegramId = Telegram.WebApp.initDataUnsafe.user.id;
+          console.log('📱 Telegram User ID:', telegramId);
+        }
+
+        // Set colors
+        try {
+          Telegram.WebApp.setBackgroundColor('#f6f6f6');
+          Telegram.WebApp.setHeaderColor('#ffffff');
+        } catch (_) {}
+
+        // Update viewport height
+        updateViewportHeight();
+        Telegram.WebApp.onEvent('viewportChanged', updateViewportHeight);
+
+        return true;
+      } catch (error) {
+        console.error('❌ Error initializing Telegram WebApp:', error);
+        return false;
+      }
+    }
+
+    // Update viewport height
+    function updateViewportHeight() {
+      let vh = window.innerHeight;
+      if (window.Telegram && Telegram.WebApp) {
+        vh = Telegram.WebApp.viewportHeight || vh;
+      }
+      document.documentElement.style.setProperty('--tg-viewport-height', `${vh}px`);
+    }
+
+    // Load perfumes from API
+    async function loadPerfumes() {
+      try {
+        console.log('📦 Loading perfumes from API...');
+        
+        const response = await fetch('/api/parfumes');
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        allPerfumes = await response.json();
+        console.log('✅ Loaded', allPerfumes.length, 'perfumes');
+        
+        filteredPerfumes = [...allPerfumes];
+        renderPerfumes();
+        
+      } catch (error) {
+        console.error('❌ Error loading perfumes:', error);
+        showEmptyState('error', 'Қате орын алды', 'Парфюмдерді жүктеу мүмкін болмады');
+      }
+    }
+
+    // Get cart quantity for product
+    function getCartQuantity(productId) {
+      const item = cart.find(item => item.id === productId);
+      return item ? item.quantity : 0;
+    }
+
+    // Render perfumes list with responsive grid support
+    function renderPerfumes() {
+      const container = document.getElementById('productList');
+      
+      if (filteredPerfumes.length === 0) {
+        showEmptyState('search');
+        return;
+      }
+
+      // Check if we're on a larger screen for grid layout
+      const isLargeScreen = window.innerWidth >= 768;
+      
+      if (isLargeScreen) {
+        // Grid layout for tablets and desktop
+        let html = `<div class="product-grid">`;
+        html += `<div class="product-count">${filteredPerfumes.length} ${translations[currentLang].items}</div>`;
+        
+        filteredPerfumes.forEach(perfume => {
+          const photoUrl = perfume.PhotoPath ? `/photo/${perfume.PhotoPath}` : null;
+          const sexLabel = getSexLabel(perfume.Sex);
+          const cartQuantity = getCartQuantity(perfume.Id);
+          
+          let imageHtml;
+          if (photoUrl) {
+            imageHtml = `<img src="${photoUrl}" alt="${escapeHtml(perfume.NameParfume)}" onload="this.style.display='block'" onerror="handleImageError(this)">`;
+          } else {
+            imageHtml = '<div class="image-placeholder">🌸</div>';
+          }
+          
+          html += `
+            <div class="product-item" onclick="showProductDetail('${perfume.Id}')">
+              <div class="product-image">
+                ${imageHtml}
+              </div>
+              <div class="product-info">
+                <div class="product-name">${escapeHtml(perfume.NameParfume)}</div>
+                <span class="product-sex">${sexLabel}</span>
+                <div class="product-description">${escapeHtml(perfume.Description)}</div>
+                <div class="product-actions">
+                  <div class="product-price">
+                    ${perfume.Price} <span class="product-price-unit">${translations[currentLang].tenge}</span>
+                  </div>
+                  <button class="add-btn" onclick="event.stopPropagation(); addToCart('${perfume.Id}')">
+                    ➕ ${translations[currentLang].addToCart}
+                    ${cartQuantity > 0 ? `<span class="product-cart-indicator">${cartQuantity}</span>` : ''}
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        
+        html += `</div>`;
+        container.innerHTML = html;
+      } else {
+        // Mobile list layout
+        let html = `<div class="product-count">${filteredPerfumes.length} ${translations[currentLang].items}</div>`;
+        
+        filteredPerfumes.forEach(perfume => {
+          const photoUrl = perfume.PhotoPath ? `/photo/${perfume.PhotoPath}` : null;
+          const sexLabel = getSexLabel(perfume.Sex);
+          const cartQuantity = getCartQuantity(perfume.Id);
+          
+          let imageHtml;
+          if (photoUrl) {
+            imageHtml = `<img src="${photoUrl}" alt="${escapeHtml(perfume.NameParfume)}" onload="this.style.display='block'" onerror="handleImageError(this)">`;
+          } else {
+            imageHtml = '<div class="image-placeholder">🌸</div>';
+          }
+          
+          html += `
+            <div class="product-item" onclick="showProductDetail('${perfume.Id}')">
+              <div class="product-image">
+                ${imageHtml}
+              </div>
+              <div class="product-info">
+                <div class="product-name">${escapeHtml(perfume.NameParfume)}</div>
+                <span class="product-sex">${sexLabel}</span>
+                <div class="product-description">${escapeHtml(perfume.Description)}</div>
+                <div class="product-actions">
+                  <div class="product-price">
+                    ${perfume.Price} <span class="product-price-unit">${translations[currentLang].tenge}</span>
+                  </div>
+                  <button class="add-btn" onclick="event.stopPropagation(); addToCart('${perfume.Id}')">
+                    ➕ ${translations[currentLang].addToCart}
+                    ${cartQuantity > 0 ? `<span class="product-cart-indicator">${cartQuantity}</span>` : ''}
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        
+        container.innerHTML = html;
+      }
+    }
+
+    // Show empty state
+    function showEmptyState(type, customTitle = null, customSubtitle = null) {
+      const container = document.getElementById('productList');
+      let icon, title, subtitle;
+      
+      if (type === 'search') {
+        icon = '🔍';
+        title = customTitle || translations[currentLang].emptySearchTitle;
+        subtitle = customSubtitle || translations[currentLang].emptySearchSubtitle;
+      } else if (type === 'error') {
+        icon = '⚠️';
+        title = customTitle || 'Қате орын алды';
+        subtitle = customSubtitle || 'Парфюмдерді жүктеу мүмкін болмады';
+      }
+      
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">${icon}</div>
+          <div class="empty-title">${title}</div>
+          <div class="empty-subtitle">${subtitle}</div>
+        </div>
+      `;
+    }
+
+    // Get sex label
+    function getSexLabel(sex) {
+      const labels = {
+        'Male': translations[currentLang].male,
+        'Female': translations[currentLang].female,
+        'Unisex': translations[currentLang].unisex
+      };
+      return labels[sex] || sex;
+    }
+
+    // Escape HTML
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Set filter
+    function setFilter(filter) {
+      currentFilter = filter;
+      
+      // Update filter buttons
+      document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      
+      // Filter perfumes
+      if (filter === 'all') {
+        filteredPerfumes = [...allPerfumes];
+      } else {
+        filteredPerfumes = allPerfumes.filter(p => p.Sex === filter);
+      }
+      
+      // Apply search if active
+      const searchTerm = document.getElementById('searchInput').value.trim();
+      if (searchTerm) {
+        searchPerfumes(searchTerm);
+      } else {
+        renderPerfumes();
+      }
+    }
+
+    // Search perfumes
+    function searchPerfumes(query) {
+      const searchTerm = query.toLowerCase();
+      let baseList = currentFilter === 'all' ? allPerfumes : allPerfumes.filter(p => p.Sex === currentFilter);
+      
+      filteredPerfumes = baseList.filter(perfume => 
+        perfume.NameParfume.toLowerCase().includes(searchTerm) ||
+        perfume.Description.toLowerCase().includes(searchTerm)
+      );
+      
+      renderPerfumes();
+    }
+
+    // Show product detail modal
+    function showProductDetail(productId) {
+      const perfume = allPerfumes.find(p => p.Id === productId);
+      if (!perfume) return;
+      
+      const photoUrl = perfume.PhotoPath ? `/photo/${perfume.PhotoPath}` : null;
+      const sexLabel = getSexLabel(perfume.Sex);
+      
+      const modalContent = document.getElementById('modalContent');
+      
+      let imageHtml;
+      if (photoUrl) {
+        imageHtml = `<img src="${photoUrl}" alt="${escapeHtml(perfume.NameParfume)}" onload="this.style.display='block'" onerror="handleImageError(this)">`;
+      } else {
+        imageHtml = '<div class="image-placeholder">🌸</div>';
+      }
+      
+      modalContent.innerHTML = `
+        <div class="modal-image">
+          ${imageHtml}
+        </div>
+        <h2 class="modal-title">${escapeHtml(perfume.NameParfume)}</h2>
+        <span class="modal-sex">${sexLabel}</span>
+        <p class="modal-description">${escapeHtml(perfume.Description)}</p>
+        <div class="modal-price">${perfume.Price} ${translations[currentLang].tenge}</div>
+        <button class="modal-add-btn" onclick="addToCart('${perfume.Id}'); closeModal();">
+          ➕ ${translations[currentLang].addToCart}
+        </button>
+      `;
+      
+      document.getElementById('modalOverlay').style.display = 'flex';
+    }
+
+    // Handle image loading errors
+    function handleImageError(img) {
+      const container = img.parentElement;
+      container.innerHTML = '<div class="image-placeholder">🌸</div>';
+    }
+
+    // Close modal
+    function closeModal() {
+      document.getElementById('modalOverlay').style.display = 'none';
+    }
+
+    // Add to cart
+    function addToCart(productId) {
+      const perfume = allPerfumes.find(p => p.Id === productId);
+      if (!perfume) return;
+      
+      const existingItem = cart.find(item => item.id === productId);
+      
+      if (existingItem) {
+        existingItem.quantity += 1;
+      } else {
+        cart.push({
+          id: productId,
+          name: perfume.NameParfume,
+          price: perfume.Price,
+          photo: perfume.PhotoPath,
+          quantity: 1
+        });
+      }
+      
+      updateCartUI();
+      
+      // Show quick feedback
+      const btn = event.currentTarget;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '✓ Қосылды';
+      btn.style.background = 'var(--uber-green)';
+      
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.style.background = '';
+      }, 1000);
+      
+      console.log('🛒 Added to cart:', perfume.NameParfume);
+    }
+
+    // Update cart UI
+    function updateCartUI() {
+      const cartBadge = document.getElementById('cartBadge');
+      const quickOrderBtn = document.getElementById('quickOrderBtn');
+      const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+      const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      
+      // Update badge
+      if (totalItems > 0) {
+        cartBadge.textContent = totalItems;
+        cartBadge.classList.remove('hidden');
+        quickOrderBtn.classList.add('show');
+        document.getElementById('orderBtnTotal').textContent = `${totalPrice} ${translations[currentLang].tenge}`;
+      } else {
+        cartBadge.classList.add('hidden');
+        quickOrderBtn.classList.remove('show');
+      }
+      
+      // Update cart panel if open
+      if (isCartOpen) {
+        renderCart();
+      }
+    }
+
+    // Toggle cart
+    function toggleCart() {
+      isCartOpen = !isCartOpen;
+      const cartPanel = document.getElementById('cartPanel');
+      
+      if (isCartOpen) {
+        cartPanel.classList.add('show');
+        renderCart();
+        
+        // Add backdrop overlay for mobile/tablet
+        if (window.innerWidth < 1024) {
+          const overlay = document.createElement('div');
+          overlay.id = 'cart-backdrop';
+          overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 40;
+          `;
+          overlay.onclick = () => toggleCart();
+          document.body.appendChild(overlay);
+        }
+      } else {
+        cartPanel.classList.remove('show');
+        
+        // Remove backdrop overlay
+        const overlay = document.getElementById('cart-backdrop');
+        if (overlay) {
+          overlay.remove();
+        }
+      }
+    }
+
+    // Render cart
+    function renderCart() {
+      const cartItems = document.getElementById('cartItems');
+      const totalValue = document.getElementById('totalValue');
+      const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      
+      totalValue.textContent = `${totalPrice} ${translations[currentLang].tenge}`;
+      
+      if (cart.length === 0) {
+        cartItems.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">🛒</div>
+            <div class="empty-title">${translations[currentLang].emptyCartTitle}</div>
+            <div class="empty-subtitle">${translations[currentLang].emptyCartSubtitle}</div>
+          </div>
+        `;
+        return;
+      }
+      
+      let html = '';
+      cart.forEach(item => {
+        const photoUrl = item.photo ? `/photo/${item.photo}` : null;
+        html += `
+          <div class="cart-item">
+            <div class="cart-item-image">
+              ${photoUrl ? 
+                `<img src="${photoUrl}" alt="${escapeHtml(item.name)}" onerror="this.parentElement.innerHTML='🌸'; this.parentElement.style.fontSize='24px'; this.parentElement.style.color='var(--lumen-gold)';">` 
+                : 
+                '<span style="font-size: 24px; color: var(--lumen-gold);">🌸</span>'
+              }
+            </div>
+            <div class="cart-item-info">
+              <div class="cart-item-name">${escapeHtml(item.name)}</div>
+              <div class="cart-item-price">${item.price} ${translations[currentLang].tenge}</div>
+            </div>
+            <div class="cart-item-controls">
+              <div class="quantity-controls">
+                <button class="quantity-btn" onclick="updateQuantity('${item.id}', -1)">−</button>
+                <span class="quantity-value">${item.quantity}</span>
+                <button class="quantity-btn" onclick="updateQuantity('${item.id}', 1)">+</button>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      
+      cartItems.innerHTML = html;
+    }
+
+    // Update quantity - Fixed to prevent cart closing
+    function updateQuantity(productId, change) {
+      const item = cart.find(item => item.id === productId);
+      if (!item) return;
+      
+      item.quantity += change;
+      
+      if (item.quantity <= 0) {
+        cart = cart.filter(cartItem => cartItem.id !== productId);
+      }
+      
+      updateCartUI();
+      
+      // Update product list to show new quantities
+      renderPerfumes();
+    }
+
+    // Proceed to order
+    function proceedToOrder() {
+      if (cart.length === 0) {
+        if (window.Telegram && Telegram.WebApp) {
+          Telegram.WebApp.showAlert(translations[currentLang].emptyCartTitle);
+        } else {
+          alert(translations[currentLang].emptyCartTitle);
+        }
+        return;
+      }
+      
+      // Store cart in sessionStorage for client-forms.html
+      const orderData = {
+        telegram_id: telegramId,
+        cart: cart,
+        total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+        timestamp: Date.now()
+      };
+      
+      try {
+        sessionStorage.setItem('lumenOrder', JSON.stringify(orderData));
+        console.log('💾 Order data saved to sessionStorage');
+        
+        // Navigate to client forms
+        window.location.href = './client-forms.html';
+        
+      } catch (error) {
+        console.error('❌ Error saving order data:', error);
+        if (window.Telegram && Telegram.WebApp) {
+          Telegram.WebApp.showAlert('Қате орын алды. Қайталап көріңіз.');
+        } else {
+          alert('Қате орын алды. Қайталап көріңіз.');
+        }
+      }
+    }
+
+    // Set language
+    function setLanguage(lang) {
+      currentLang = lang;
+      
+      // Update language buttons
+      document.getElementById('langRu').classList.toggle('active', lang === 'ru');
+      document.getElementById('langKz').classList.toggle('active', lang === 'kz');
+      
+      // Update UI text
+      document.getElementById('headerTitle').textContent = translations[lang].title;
+      document.getElementById('headerSubtitle').textContent = translations[lang].subtitle;
+      document.getElementById('searchInput').placeholder = translations[lang].searchPlaceholder;
+      document.getElementById('loadingText').textContent = translations[lang].loadingText;
+      document.getElementById('orderBtnText').textContent = translations[lang].orderBtnText;
+      document.getElementById('cartTitle').textContent = translations[lang].cartTitle;
+      document.getElementById('cartSubtitle').textContent = translations[lang].cartSubtitle;
+      document.getElementById('totalLabel').textContent = translations[lang].totalLabel;
+      document.getElementById('cartOrderBtn').textContent = translations[lang].orderBtnText;
+      
+      // Update filter buttons
+      document.getElementById('filterAll').textContent = translations[lang].filterAll;
+      document.getElementById('filterMale').textContent = translations[lang].filterMale;
+      document.getElementById('filterFemale').textContent = translations[lang].filterFemale;
+      document.getElementById('filterUnisex').textContent = translations[lang].filterUnisex;
+      
+      // Re-render current view
+      if (filteredPerfumes.length > 0) {
+        renderPerfumes();
+      }
+      
+      if (isCartOpen) {
+        renderCart();
+      }
+      
+      updateCartUI();
+    }
+
+    // Search input handler
+    document.addEventListener('DOMContentLoaded', function() {
+      const searchInput = document.getElementById('searchInput');
+      let searchTimeout;
+      
+      searchInput.addEventListener('input', function(e) {
+        clearTimeout(searchTimeout);
+        const query = e.target.value.trim();
+        
+        searchTimeout = setTimeout(() => {
+          if (query.length === 0) {
+            // Reset to filtered view
+            if (currentFilter === 'all') {
+              filteredPerfumes = [...allPerfumes];
+            } else {
+              filteredPerfumes = allPerfumes.filter(p => p.Sex === currentFilter);
+            }
+          } else {
+            searchPerfumes(query);
+          }
+          renderPerfumes();
+        }, 300);
+      });
+    });
+
+    // Close cart when clicking outside - Fixed to prevent closing on internal clicks
+    document.addEventListener('click', function(e) {
+      const cartPanel = document.getElementById('cartPanel');
+      const cartBtn = document.querySelector('.cart-btn');
+      
+      // Don't close if clicking inside cart, on cart button, or on quantity controls
+      if (isCartOpen && 
+          !cartPanel.contains(e.target) && 
+          !cartBtn.contains(e.target) &&
+          !e.target.classList.contains('quantity-btn') &&
+          !e.target.closest('.quantity-controls')) {
+        toggleCart();
+      }
+    });
+
+    // Prevent cart from closing when clicking inside cart panel
+    document.addEventListener('DOMContentLoaded', function() {
+      const cartPanel = document.getElementById('cartPanel');
+      if (cartPanel) {
+        cartPanel.addEventListener('click', function(e) {
+          e.stopPropagation();
+        });
+      }
+    });
+
+    // Initialize app
+    async function init() {
+      console.log('🚀 Initializing Lumen Perfume Catalog...');
+      
+      initTelegramWebApp();
+      setLanguage('kz');
+      await loadPerfumes();
+      
+      // Handle window resize for responsive design
+      window.addEventListener('resize', function() {
+        updateViewportHeight();
+        renderPerfumes(); // Re-render with appropriate layout
+      });
+      
+      console.log('✅ Perfume catalog ready!');
+    }
+
+    // Start app
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+
+    // Handle back button (close modals/cart)
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        if (document.getElementById('modalOverlay').style.display === 'flex') {
+          closeModal();
+        } else if (isCartOpen) {
+          toggleCart();
+        }
+      }
+    });
+
+    // Prevent zoom on double tap
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e) {
+      const now = (new Date()).getTime();
+      if (now - lastTouchEnd <= 300) {
+        e.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, false);
+  </script>
+</body>
+</html>
