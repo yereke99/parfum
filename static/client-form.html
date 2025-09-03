@@ -1,0 +1,1877 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Lumen | Тапсырыс беру</title>
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <style>
+    :root {
+      /* Lumen Dark Theme */
+      --lumen-black: #0a0a0b;
+      --lumen-dark: #161618;
+      --lumen-card: #1e1e20;
+      --lumen-border: #2a2a2d;
+      --lumen-text: #ffffff;
+      --lumen-text-secondary: #a0a0a3;
+      --lumen-text-muted: #6d6d70;
+      
+      --lumen-primary: #8b5cf6;
+      --lumen-primary-dark: #7c3aed;
+      --lumen-secondary: #06d6a0;
+      --lumen-accent: #f59e0b;
+      --lumen-danger: #ef4444;
+      
+      /* Glass morphism */
+      --glass-bg: rgba(255, 255, 255, 0.05);
+      --glass-border: rgba(255, 255, 255, 0.1);
+      --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
+      
+      --tg-viewport-height: 100vh;
+      --bottom-sheet-height: auto;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, var(--lumen-black) 0%, var(--lumen-dark) 100%);
+      color: var(--lumen-text);
+      position: fixed;
+      width: 100%;
+      height: var(--tg-viewport-height);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* App Container */
+    .app-container {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Map Container */
+    #mainMap {
+      flex: 1;
+      width: 100%;
+      position: relative;
+      z-index: 1;
+      background: var(--lumen-dark);
+      border-radius: 0;
+    }
+
+    /* Hide Leaflet Controls */
+    .leaflet-control-attribution {
+      display: none;
+    }
+
+    .leaflet-control-zoom {
+      display: none;
+    }
+
+    /* Status Bar */
+    .status-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 16px;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(10, 10, 11, 0.8) 0%, transparent 100%);
+      backdrop-filter: blur(10px);
+    }
+
+    .status-bar > * {
+      pointer-events: auto;
+    }
+
+    /* GPS Status */
+    .gps-status {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      padding: 10px 16px;
+      border-radius: 25px;
+      backdrop-filter: blur(20px);
+      box-shadow: var(--glass-shadow);
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+      color: var(--lumen-text);
+    }
+
+    .gps-status.active {
+      background: linear-gradient(135deg, var(--lumen-secondary), #00c896);
+      border-color: var(--lumen-secondary);
+      color: white;
+    }
+
+    .gps-status .pulse-dot {
+      width: 6px;
+      height: 6px;
+      background: currentColor;
+      border-radius: 50%;
+      animation: pulse-dot 2s infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* Language Switch */
+    .lang-switch {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 25px;
+      backdrop-filter: blur(20px);
+      box-shadow: var(--glass-shadow);
+      display: flex;
+      padding: 4px;
+    }
+
+    .lang-btn {
+      padding: 8px 16px;
+      border: none;
+      background: transparent;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--lumen-text-secondary);
+    }
+
+    .lang-btn.active {
+      background: linear-gradient(135deg, var(--lumen-primary), var(--lumen-primary-dark));
+      color: white;
+    }
+
+    /* Location Button */
+    .location-btn {
+      position: absolute;
+      bottom: calc(var(--bottom-sheet-height) + 24px);
+      right: 20px;
+      width: 56px;
+      height: 56px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 50%;
+      backdrop-filter: blur(20px);
+      box-shadow: var(--glass-shadow);
+      cursor: pointer;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+      font-size: 24px;
+      color: var(--lumen-text);
+    }
+
+    .location-btn:hover {
+      background: var(--glass-border);
+      transform: scale(1.05);
+    }
+
+    .location-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* Custom Map Markers */
+    .user-location-pulse {
+      width: 18px;
+      height: 18px;
+      background: var(--lumen-secondary);
+      border: 3px solid white;
+      border-radius: 50%;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+      position: relative;
+    }
+
+    .user-location-pulse::after {
+      content: '';
+      position: absolute;
+      top: -12px;
+      left: -12px;
+      width: 42px;
+      height: 42px;
+      background: rgba(6, 214, 160, 0.2);
+      border-radius: 50%;
+      animation: pulse-ring 2s infinite;
+    }
+
+    @keyframes pulse-ring {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(2.5); opacity: 0; }
+    }
+
+    .delivery-marker {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--lumen-primary), var(--lumen-primary-dark));
+      border: 3px solid white;
+      border-radius: 50%;
+      box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 20px;
+      position: relative;
+    }
+
+    /* Bottom Sheet */
+    .bottom-sheet {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--lumen-card);
+      border: 1px solid var(--lumen-border);
+      border-radius: 24px 24px 0 0;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.5);
+      z-index: 20;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      max-height: 70vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sheet-handle {
+      width: 40px;
+      height: 4px;
+      background: var(--lumen-text-muted);
+      border-radius: 2px;
+      margin: 12px auto 8px;
+    }
+
+    .sheet-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 20px 24px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .sheet-header {
+      padding: 0 20px;
+      margin-bottom: 24px;
+    }
+
+    .sheet-title {
+      font-size: 28px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--lumen-primary), var(--lumen-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+
+    .sheet-subtitle {
+      font-size: 16px;
+      color: var(--lumen-text-secondary);
+      line-height: 1.5;
+    }
+
+    /* Lumen Brand Header */
+    .brand-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--lumen-primary), var(--lumen-secondary));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: bold;
+      color: white;
+    }
+
+    /* Form Sections */
+    .form-section {
+      margin-bottom: 28px;
+    }
+
+    .section-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--lumen-primary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-icon {
+      font-size: 16px;
+    }
+
+    /* Input Fields */
+    .input-group {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 0;
+      margin-bottom: 16px;
+      transition: all 0.3s;
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+    }
+
+    .input-group:focus-within {
+      border-color: var(--lumen-primary);
+      background: rgba(139, 92, 246, 0.1);
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+    }
+
+    .input-wrapper {
+      display: flex;
+      align-items: center;
+      padding: 18px 20px;
+    }
+
+    .input-icon {
+      font-size: 20px;
+      margin-right: 16px;
+      flex-shrink: 0;
+      color: var(--lumen-text-secondary);
+    }
+
+    .input-field {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      font-size: 16px;
+      color: var(--lumen-text);
+      font-weight: 500;
+      font-family: inherit;
+    }
+
+    .input-field::placeholder {
+      color: var(--lumen-text-muted);
+      font-weight: 400;
+    }
+
+    /* Address Selector */
+    .address-selector {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 18px 20px;
+      margin-bottom: 16px;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+      backdrop-filter: blur(10px);
+    }
+
+    .address-selector:hover {
+      background: rgba(139, 92, 246, 0.05);
+      border-color: var(--lumen-primary);
+    }
+
+    .address-selector.active {
+      border-color: var(--lumen-secondary);
+      background: rgba(6, 214, 160, 0.1);
+      box-shadow: 0 0 0 3px rgba(6, 214, 160, 0.2);
+    }
+
+    .address-selector.selecting {
+      border-color: var(--lumen-primary);
+      background: rgba(139, 92, 246, 0.1);
+    }
+
+    .address-content {
+      display: flex;
+      align-items: center;
+    }
+
+    .address-icon {
+      font-size: 20px;
+      margin-right: 16px;
+      color: var(--lumen-text-secondary);
+    }
+
+    .address-text {
+      flex: 1;
+    }
+
+    .address-value {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--lumen-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .address-value.empty {
+      color: var(--lumen-text-muted);
+      font-weight: 400;
+    }
+
+    .address-action {
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--lumen-text-secondary);
+      font-size: 18px;
+    }
+
+    /* Search Modal */
+    .search-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--lumen-card);
+      z-index: 100;
+      display: none;
+      flex-direction: column;
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .search-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--lumen-border);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--lumen-dark);
+    }
+
+    .search-back {
+      width: 44px;
+      height: 44px;
+      border: none;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: var(--lumen-text);
+      transition: all 0.2s;
+    }
+
+    .search-back:hover {
+      background: var(--glass-border);
+    }
+
+    .search-input-wrapper {
+      flex: 1;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 14px 50px 14px 16px;
+      border: 1px solid var(--lumen-border);
+      border-radius: 12px;
+      font-size: 16px;
+      outline: none;
+      background: var(--glass-bg);
+      color: var(--lumen-text);
+      backdrop-filter: blur(10px);
+    }
+
+    .search-input:focus {
+      border-color: var(--lumen-primary);
+      background: rgba(139, 92, 246, 0.1);
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+    }
+
+    .search-input::placeholder {
+      color: var(--lumen-text-muted);
+    }
+
+    .search-clear {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--lumen-text-secondary);
+      font-size: 16px;
+    }
+
+    .search-options {
+      padding: 20px;
+      border-bottom: 1px solid var(--lumen-border);
+      display: flex;
+      gap: 12px;
+      background: var(--lumen-dark);
+    }
+
+    .option-pill {
+      padding: 12px 20px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 25px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--lumen-text);
+      backdrop-filter: blur(10px);
+    }
+
+    .option-pill:hover {
+      background: var(--glass-border);
+    }
+
+    .option-pill.active {
+      background: linear-gradient(135deg, var(--lumen-primary), var(--lumen-primary-dark));
+      border-color: var(--lumen-primary);
+      color: white;
+    }
+
+    .search-results {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      background: var(--lumen-card);
+    }
+
+    .search-item {
+      padding: 20px;
+      border-bottom: 1px solid var(--lumen-border);
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .search-item:hover {
+      background: var(--glass-bg);
+    }
+
+    .search-item-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: var(--lumen-text-secondary);
+      backdrop-filter: blur(10px);
+    }
+
+    .search-item-text {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .search-item-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--lumen-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
+
+    .search-item-subtitle {
+      font-size: 14px;
+      color: var(--lumen-text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Map Center Pin */
+    .map-center-pin {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -100%);
+      z-index: 99;
+      pointer-events: none;
+      transition: all 0.2s ease;
+    }
+
+    .pin-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .pin-address-bubble {
+      background: var(--lumen-card);
+      border: 1px solid var(--lumen-border);
+      padding: 12px 16px;
+      border-radius: 12px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      margin-bottom: 12px;
+      max-width: 280px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--lumen-text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      opacity: 0;
+      transform: scale(0.9);
+      transition: all 0.2s ease;
+    }
+
+    .pin-address-bubble.show {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .pin-icon {
+      width: 4px;
+      height: 36px;
+      background: var(--lumen-primary);
+      position: relative;
+      border-radius: 2px;
+    }
+
+    .pin-icon::before {
+      content: '';
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 20px;
+      background: linear-gradient(135deg, var(--lumen-primary), var(--lumen-primary-dark));
+      border: 3px solid white;
+      border-radius: 50%;
+      box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+    }
+
+    .pin-shadow {
+      width: 20px;
+      height: 4px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 50%;
+      margin-top: -2px;
+      filter: blur(4px);
+    }
+
+    /* Confirm Button */
+    .map-confirm-btn {
+      position: absolute;
+      bottom: 24px;
+      left: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, var(--lumen-primary), var(--lumen-primary-dark));
+      color: white;
+      padding: 18px;
+      border: none;
+      border-radius: 16px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      z-index: 100;
+      box-shadow: 0 8px 32px rgba(139, 92, 246, 0.4);
+      transition: all 0.2s;
+      display: none;
+      backdrop-filter: blur(20px);
+    }
+
+    .map-confirm-btn.show {
+      display: block;
+      animation: slideUpBtn 0.3s ease;
+    }
+
+    @keyframes slideUpBtn {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .map-confirm-btn:hover {
+      background: linear-gradient(135deg, var(--lumen-primary-dark), #6d28d9);
+    }
+
+    .map-confirm-btn:active {
+      transform: scale(0.98);
+    }
+
+    /* Submit Button */
+    .submit-btn {
+      background: linear-gradient(135deg, var(--lumen-primary), var(--lumen-primary-dark));
+      color: white;
+      padding: 18px;
+      border: none;
+      border-radius: 16px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.3s;
+      margin-top: 12px;
+      box-shadow: 0 8px 32px rgba(139, 92, 246, 0.3);
+      backdrop-filter: blur(20px);
+    }
+
+    .submit-btn:hover:not(:disabled) {
+      background: linear-gradient(135deg, var(--lumen-primary-dark), #6d28d9);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(139, 92, 246, 0.4);
+    }
+
+    .submit-btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* Loading State */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(10, 10, 11, 0.8);
+      backdrop-filter: blur(10px);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .loading-spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid var(--glass-border);
+      border-top-color: var(--lumen-primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Cart Summary */
+    .cart-summary {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 24px;
+      backdrop-filter: blur(10px);
+    }
+
+    .cart-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--lumen-text);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cart-item {
+      display: flex;
+      justify-content: between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--lumen-border);
+    }
+
+    .cart-item:last-child {
+      border-bottom: none;
+    }
+
+    .cart-item-info {
+      flex: 1;
+    }
+
+    .cart-item-name {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--lumen-text);
+      margin-bottom: 4px;
+    }
+
+    .cart-item-details {
+      font-size: 14px;
+      color: var(--lumen-text-secondary);
+    }
+
+    .cart-item-price {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--lumen-secondary);
+    }
+
+    .cart-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 16px;
+      margin-top: 16px;
+      border-top: 2px solid var(--lumen-border);
+    }
+
+    .cart-total-label {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--lumen-text);
+    }
+
+    .cart-total-amount {
+      font-size: 20px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--lumen-primary), var(--lumen-secondary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Utility Classes */
+    .hidden {
+      display: none !important;
+    }
+
+    /* Mobile Optimizations */
+    @media (max-width: 480px) {
+      .bottom-sheet {
+        max-height: 65vh;
+      }
+
+      .sheet-title {
+        font-size: 24px;
+      }
+
+      .location-btn {
+        bottom: calc(var(--bottom-sheet-height) + 16px);
+        right: 16px;
+        width: 52px;
+        height: 52px;
+      }
+
+      .map-confirm-btn {
+        bottom: 20px;
+        left: 16px;
+        right: 16px;
+      }
+
+      .pin-address-bubble {
+        max-width: 220px;
+        font-size: 13px;
+      }
+
+      .status-bar {
+        padding: 12px 16px;
+      }
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--lumen-text-muted);
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--lumen-text-secondary);
+    }
+
+    /* Disable pull-to-refresh */
+    body {
+      overscroll-behavior-y: contain;
+    }
+  </style>
+  
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Map -->
+    <div id="mainMap"></div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <div class="gps-status" id="gpsStatus">
+        <span class="pulse-dot"></span>
+        <span id="gpsText">GPS...</span>
+      </div>
+      
+      <div class="lang-switch">
+        <button class="lang-btn" id="langRu" onclick="setLanguage('ru')">РУС</button>
+        <button class="lang-btn active" id="langKz" onclick="setLanguage('kz')">ҚАЗ</button>
+      </div>
+    </div>
+
+    <!-- My Location Button -->
+    <button class="location-btn" onclick="centerOnUserLocation()">
+      📍
+    </button>
+
+    <!-- Map Center Pin -->
+    <div class="map-center-pin hidden" id="mapCenterPin">
+      <div class="pin-container">
+        <div class="pin-address-bubble" id="pinAddressBubble"></div>
+        <div class="pin-icon"></div>
+        <div class="pin-shadow"></div>
+      </div>
+    </div>
+
+    <!-- Map Confirm Button -->
+    <button class="map-confirm-btn" id="mapConfirmBtn" onclick="confirmMapSelection()">
+      <span id="mapConfirmText">Таңдау</span>
+    </button>
+
+    <!-- Bottom Sheet -->
+    <div class="bottom-sheet" id="bottomSheet">
+      <div class="sheet-handle"></div>
+      
+      <div class="sheet-header">
+        <div class="brand-header">
+          <div class="brand-icon">L</div>
+          <div>
+            <h1 class="sheet-title" id="sheetTitle">Тапсырыс беру</h1>
+            <p class="sheet-subtitle" id="sheetSubtitle">Lumen парфюмдерін тапсырыс беру үшін мәліметтеріңізді енгізіңіз</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="sheet-content">
+        <!-- Cart Summary -->
+        <div class="cart-summary" id="cartSummary">
+          <div class="cart-title">
+            <span class="section-icon">🛒</span>
+            Сіздің тапсырысыңыз
+          </div>
+          <div id="cartItems"></div>
+          <div class="cart-total">
+            <div class="cart-total-label">Жалпы сома:</div>
+            <div class="cart-total-amount" id="cartTotal">0₸</div>
+          </div>
+        </div>
+
+        <form id="clientForm">
+          <!-- Personal Info Section -->
+          <div class="form-section">
+            <div class="section-label" id="personalLabel">
+              <span class="section-icon">👤</span>
+              ЖЕКЕ МӘЛІМЕТТЕР
+            </div>
+            
+            <div class="input-group">
+              <div class="input-wrapper">
+                <span class="input-icon">👤</span>
+                <input type="text" class="input-field" id="fio" name="fio" 
+                       placeholder="Толық атыңыз" required>
+              </div>
+            </div>
+            
+            <div class="input-group">
+              <div class="input-wrapper">
+                <span class="input-icon">📱</span>
+                <input type="tel" class="input-field" id="contact" name="contact" 
+                       placeholder="Телефон нөмірі" required>
+              </div>
+            </div>
+          </div>
+
+          <!-- Delivery Address Section -->
+          <div class="form-section">
+            <div class="section-label" id="deliveryLabel">
+              <span class="section-icon">📍</span>
+              ЖЕТКІЗУ МЕКЕНЖАЙЫ
+            </div>
+            
+            <div class="address-selector" id="addressSelector" onclick="openAddressSearch()">
+              <div class="address-content">
+                <span class="address-icon">📍</span>
+                <div class="address-text">
+                  <div class="address-value empty" id="addressDisplay">Мекенжай таңдау үшін басыңыз</div>
+                </div>
+                <span class="address-action">→</span>
+              </div>
+            </div>
+          </div>
+
+          <input type="hidden" name="address" id="address">
+          <input type="hidden" name="latitude" id="latitude">
+          <input type="hidden" name="longitude" id="longitude">
+          <input type="hidden" name="telegram_id" id="telegram_id">
+          <input type="hidden" name="cart_data" id="cart_data">
+          <input type="hidden" name="total_amount" id="total_amount">
+
+          <button type="submit" class="submit-btn" id="submitBtn">
+            💫 Тапсырыс беру
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Address Search Modal -->
+    <div class="search-modal" id="searchModal">
+      <div class="search-header">
+        <button class="search-back" onclick="closeAddressSearch()">←</button>
+        <div class="search-input-wrapper">
+          <input type="text" class="search-input" id="searchInput" 
+                 placeholder="Мекенжайды іздеу...">
+          <button class="search-clear" onclick="clearSearch()">✕</button>
+        </div>
+      </div>
+      
+      <div class="search-options">
+        <button class="option-pill active" onclick="switchSearchMode('text')">
+          ✏️ Мәтін арқылы
+        </button>
+        <button class="option-pill" onclick="switchSearchMode('map')">
+          🗺️ Картадан таңдау
+        </button>
+      </div>
+      
+      <div class="search-results" id="searchResults"></div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="loading-spinner"></div>
+    </div>
+  </div>
+
+  <script>
+    // Global Variables
+    let map;
+    let userLocationMarker;
+    let deliveryMarker;
+    let currentUserLocation = null;
+    let selectedLocation = null;
+    let selectedAddress = '';
+    let isMapSelectionMode = false;
+    let searchTimeout;
+    let currentLang = 'kz';
+    let watchId = null;
+    let telegramId = null;
+    let telegramUser = null;
+    let cartData = [];
+    let totalAmount = 0;
+
+    // Translations
+    const translations = {
+      ru: {
+        title: 'Оформление заказа',
+        subtitle: 'Введите данные для заказа парфюмерии Lumen',
+        personalInfo: 'ЛИЧНЫЕ ДАННЫЕ',
+        deliveryAddress: 'АДРЕС ДОСТАВКИ',
+        fullName: 'Введите ваше полное имя',
+        phoneNumber: 'Номер телефона',
+        selectAddress: 'Нажмите для выбора адреса',
+        placeOrder: '💫 Оформить заказ',
+        searchPlaceholder: 'Поиск адреса...',
+        textSearch: '✏️ Текстовый поиск',
+        mapSelect: '🗺️ Выбрать на карте',
+        confirmAddress: 'Выбрать',
+        gpsActive: 'GPS активен',
+        gpsSearching: 'Поиск GPS...',
+        gpsError: 'GPS недоступен',
+        currentLocation: '📍 Мое местоположение',
+        fillAllFields: 'Заполните все поля',
+        orderPlaced: 'Заказ оформлен!',
+        error: 'Ошибка',
+        loading: 'Загрузка...',
+        yourOrder: 'Ваш заказ',
+        totalAmount: 'Общая сумма:'
+      },
+      kz: {
+        title: 'Тапсырыс беру',
+        subtitle: 'Lumen парфюмдерін тапсырыс беру үшін мәліметтеріңізді енгізіңіз',
+        personalInfo: 'ЖЕКЕ МӘЛІМЕТТЕР',
+        deliveryAddress: 'ЖЕТКІЗУ МЕКЕНЖАЙЫ',
+        fullName: 'Толық атыңызды енгізіңіз',
+        phoneNumber: 'Телефон нөмірі',
+        selectAddress: 'Мекенжай таңдау үшін басыңыз',
+        placeOrder: '💫 Тапсырыс беру',
+        searchPlaceholder: 'Мекенжайды іздеу...',
+        textSearch: '✏️ Мәтін арқылы',
+        mapSelect: '🗺️ Картадан таңдау',
+        confirmAddress: 'Таңдау',
+        gpsActive: 'GPS белсенді',
+        gpsSearching: 'GPS іздеу...',
+        gpsError: 'GPS қол жетімді емес',
+        currentLocation: '📍 Менің орналасқан жерім',
+        fillAllFields: 'Барлық өрістерді толтырыңыз',
+        orderPlaced: 'Тапсырыс берілді!',
+        error: 'Қате',
+        loading: 'Жүктелуде...',
+        yourOrder: 'Сіздің тапсырысыңыз',
+        totalAmount: 'Жалпы сома:'
+      }
+    };
+
+    // Initialize Telegram WebApp
+    function initTelegramWebApp() {
+      console.log('🚀 Initializing Lumen Order Form...');
+      
+      if (!window.Telegram || !Telegram.WebApp) {
+        console.warn('⚠️ Telegram WebApp not available');
+        return false;
+      }
+
+      try {
+        Telegram.WebApp.ready();
+        Telegram.WebApp.expand();
+        
+        try { 
+          Telegram.WebApp.disableVerticalSwipes(); 
+        } catch (_) {}
+        
+        // Get user data
+        if (Telegram.WebApp.initDataUnsafe?.user) {
+          telegramUser = Telegram.WebApp.initDataUnsafe.user;
+          telegramId = telegramUser.id;
+          document.getElementById('telegram_id').value = telegramId;
+          
+          // Auto-fill user data
+          const fioEl = document.getElementById('fio');
+          if (telegramUser.first_name || telegramUser.last_name) {
+            const fullName = [
+              telegramUser.first_name || '',
+              telegramUser.last_name || ''
+            ].filter(Boolean).join(' ');
+            fioEl.value = fullName;
+          } else if (telegramUser.username) {
+            fioEl.value = '@' + telegramUser.username;
+          } else {
+            fioEl.value = 'User' + telegramId;
+          }
+          
+          // Auto-fill contact if available
+          const contactEl = document.getElementById('contact');
+          if (telegramUser.phone_number) {
+            contactEl.value = telegramUser.phone_number;
+          }
+        }
+
+        // Set theme
+        try {
+          Telegram.WebApp.setBackgroundColor('#0a0a0b');
+          Telegram.WebApp.setHeaderColor('#161618');
+        } catch (_) {}
+
+        updateViewportHeight();
+        Telegram.WebApp.onEvent('viewportChanged', updateViewportHeight);
+
+        return true;
+      } catch (error) {
+        console.error('❌ Error initializing Telegram WebApp:', error);
+        return false;
+      }
+    }
+
+    // Load cart data from localStorage or URL params
+    function loadCartData() {
+      try {
+        // Try to get cart from localStorage first
+        const savedCart = localStorage.getItem('lumen_cart');
+        if (savedCart) {
+          cartData = JSON.parse(savedCart);
+        } else {
+          // Fallback: get from URL params if available
+          const urlParams = new URLSearchParams(window.location.search);
+          const cartParam = urlParams.get('cart');
+          if (cartParam) {
+            cartData = JSON.parse(decodeURIComponent(cartParam));
+          }
+        }
+        
+        // Calculate total
+        totalAmount = cartData.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        
+        // Update form
+        document.getElementById('cart_data').value = JSON.stringify(cartData);
+        document.getElementById('total_amount').value = totalAmount;
+        
+        displayCart();
+        
+      } catch (error) {
+        console.error('Error loading cart data:', error);
+        cartData = [];
+        totalAmount = 0;
+      }
+    }
+
+    // Display cart summary
+    function displayCart() {
+      const cartItemsContainer = document.getElementById('cartItems');
+      const cartTotalElement = document.getElementById('cartTotal');
+      
+      if (cartData.length === 0) {
+        cartItemsContainer.innerHTML = `
+          <div style="text-align: center; padding: 20px; color: var(--lumen-text-muted);">
+            Себет бос
+          </div>
+        `;
+        cartTotalElement.textContent = '0₸';
+        return;
+      }
+      
+      let itemsHTML = '';
+      cartData.forEach(item => {
+        itemsHTML += `
+          <div class="cart-item">
+            <div class="cart-item-info">
+              <div class="cart-item-name">${item.name}</div>
+              <div class="cart-item-details">${item.quantity} дана</div>
+            </div>
+            <div class="cart-item-price">${(item.price * item.quantity).toLocaleString()}₸</div>
+          </div>
+        `;
+      });
+      
+      cartItemsContainer.innerHTML = itemsHTML;
+      cartTotalElement.textContent = totalAmount.toLocaleString() + '₸';
+    }
+
+    // Update viewport height
+    let vhTimer;
+    function updateViewportHeight() {
+      clearTimeout(vhTimer);
+      vhTimer = setTimeout(() => {
+        let vh = window.innerHeight;
+        if (window.Telegram && Telegram.WebApp) {
+          vh = Telegram.WebApp.viewportHeight || vh;
+        }
+        document.documentElement.style.setProperty('--tg-viewport-height', `${vh}px`);
+        updateBottomSheetHeight();
+      }, 50);
+    }
+
+    // Update bottom sheet height
+    function updateBottomSheetHeight() {
+      const bottomSheet = document.getElementById('bottomSheet');
+      if (bottomSheet) {
+        const height = bottomSheet.offsetHeight;
+        document.documentElement.style.setProperty('--bottom-sheet-height', `${height}px`);
+      }
+    }
+
+    // Initialize Map
+    function initMap() {
+      try {
+        console.log('🗺️ Initializing Lumen map...');
+        
+        const initialCenter = currentUserLocation || [43.238949, 76.889709];
+        
+        map = L.map('mainMap', {
+          center: initialCenter,
+          zoom: 14,
+          zoomControl: false,
+          attributionControl: false,
+          preferCanvas: true,
+          updateWhenIdle: false,
+          updateWhenZooming: false,
+          wheelDebounceTime: 40
+        });
+
+        // Dark tiles for Lumen theme
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+          maxZoom: 19,
+          subdomains: 'abcd',
+          updateWhenIdle: false,
+          updateWhenZooming: false,
+          keepBuffer: 2
+        }).addTo(map);
+
+        map.on('move', handleMapMove);
+        map.on('moveend', handleMapMoveEnd);
+
+        console.log('✅ Map initialized successfully');
+        requestLocationPermission();
+        
+      } catch (error) {
+        console.error('❌ Error initializing map:', error);
+      }
+    }
+
+    // Request location permission
+    function requestLocationPermission() {
+      if (!navigator.geolocation) {
+        updateGPSStatus('error');
+        return;
+      }
+
+      updateGPSStatus('searching');
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const coords = [position.coords.latitude, position.coords.longitude];
+          currentUserLocation = coords;
+          updateGPSStatus('active');
+          updateUserLocationMarker(coords);
+          
+          if (map && !selectedLocation) {
+            map.setView(coords, 16);
+          }
+          
+          startLocationTracking();
+        },
+        (error) => {
+          console.error('Location error:', error);
+          updateGPSStatus('error');
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    }
+
+    // Start location tracking
+    function startLocationTracking() {
+      if (!navigator.geolocation) return;
+
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const coords = [position.coords.latitude, position.coords.longitude];
+          currentUserLocation = coords;
+          updateUserLocationMarker(coords);
+          
+          const accuracy = position.coords.accuracy;
+          if (accuracy <= 100) {
+            updateGPSStatus('active', `±${Math.round(accuracy)}m`);
+          }
+        },
+        (error) => {
+          console.error('Location tracking error:', error);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 1000
+        }
+      );
+    }
+
+    // Update user location marker
+    function updateUserLocationMarker(coords) {
+      if (!map) return;
+
+      if (userLocationMarker) {
+        userLocationMarker.setLatLng(coords);
+      } else {
+        const icon = L.divIcon({
+          className: 'user-location-pulse',
+          iconSize: [18, 18],
+          iconAnchor: [9, 9]
+        });
+
+        userLocationMarker = L.marker(coords, { 
+          icon: icon,
+          zIndexOffset: 1000
+        }).addTo(map);
+      }
+    }
+
+    // Update GPS status
+    function updateGPSStatus(status, extra = '') {
+      const statusEl = document.getElementById('gpsStatus');
+      const textEl = document.getElementById('gpsText');
+      
+      if (status === 'active') {
+        statusEl.classList.add('active');
+        textEl.textContent = translations[currentLang].gpsActive + (extra ? ' ' + extra : '');
+      } else if (status === 'searching') {
+        statusEl.classList.remove('active');
+        textEl.textContent = translations[currentLang].gpsSearching;
+      } else {
+        statusEl.classList.remove('active');
+        textEl.textContent = translations[currentLang].gpsError;
+      }
+    }
+
+    // Center on user location
+    function centerOnUserLocation() {
+      if (currentUserLocation && map) {
+        map.setView(currentUserLocation, 16);
+        
+        const btn = event.currentTarget;
+        btn.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+          btn.style.transform = '';
+        }, 200);
+      }
+    }
+
+    // Address search functions (same as before)
+    function openAddressSearch() {
+      const modal = document.getElementById('searchModal');
+      modal.style.display = 'flex';
+      
+      setTimeout(() => {
+        document.getElementById('searchInput').focus();
+      }, 300);
+      
+      showCurrentLocationOption();
+    }
+
+    function closeAddressSearch() {
+      const modal = document.getElementById('searchModal');
+      modal.style.display = 'none';
+      
+      if (isMapSelectionMode) {
+        exitMapSelectionMode();
+      }
+    }
+
+    function switchSearchMode(mode) {
+      const pills = document.querySelectorAll('.option-pill');
+      pills.forEach(pill => pill.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+
+      if (mode === 'map') {
+        closeAddressSearch();
+        enterMapSelectionMode();
+      } else {
+        exitMapSelectionMode();
+        document.getElementById('searchInput').focus();
+      }
+    }
+
+    function enterMapSelectionMode() {
+      isMapSelectionMode = true;
+      document.getElementById('mapCenterPin').classList.remove('hidden');
+      document.getElementById('mapConfirmBtn').classList.add('show');
+      document.getElementById('bottomSheet').style.transform = 'translateY(100%)';
+      
+      document.getElementById('mapConfirmText').textContent = translations[currentLang].confirmAddress;
+    }
+
+    function exitMapSelectionMode() {
+      isMapSelectionMode = false;
+      document.getElementById('mapCenterPin').classList.add('hidden');
+      document.getElementById('mapConfirmBtn').classList.remove('show');
+      document.getElementById('bottomSheet').style.transform = '';
+      
+      const bubble = document.getElementById('pinAddressBubble');
+      bubble.textContent = '';
+      bubble.classList.remove('show');
+    }
+
+    // Format address for Kazakhstan
+    function formatKZAddress(obj) {
+      const a = obj?.address || {};
+      const street = a.road || a.pedestrian || a.footway || a.residential || '';
+      const number = a.house_number || '';
+      const micro = a.neighbourhood || a.suburb || a.quarter || '';
+      const district = a.city_district || a.district || '';
+      const city = a.city || a.town || a.village || '';
+      
+      const streetPart = street ? (number ? `${street} ${number}` : street) : '';
+      return [streetPart, micro, district, city].filter(Boolean).join(', ');
+    }
+
+    // Handle map move
+    function handleMapMove() {
+      if (!isMapSelectionMode) return;
+      const pin = document.getElementById('mapCenterPin');
+      pin.style.transform = 'translate(-50%, -110%)';
+      
+      const bubble = document.getElementById('pinAddressBubble');
+      bubble.classList.remove('show');
+    }
+
+    // Handle map move end
+    let bubbleTimer;
+    async function handleMapMoveEnd() {
+      if (!isMapSelectionMode) return;
+      
+      const pin = document.getElementById('mapCenterPin');
+      pin.style.transform = 'translate(-50%, -100%)';
+      
+      const center = map.getCenter();
+      const coords = [center.lat, center.lng];
+      
+      clearTimeout(bubbleTimer);
+      bubbleTimer = setTimeout(async () => {
+        const addr = await getAddressFromCoords(coords);
+        const bubble = document.getElementById('pinAddressBubble');
+        bubble.textContent = addr;
+        bubble.classList.add('show');
+      }, 150);
+    }
+
+    // Confirm map selection
+    async function confirmMapSelection() {
+      if (!isMapSelectionMode) return;
+      
+      const center = map.getCenter();
+      const coords = [center.lat, center.lng];
+      const address = await getAddressFromCoords(coords);
+      
+      setSelectedLocation(coords, address);
+      exitMapSelectionMode();
+    }
+
+    // Set selected location
+    function setSelectedLocation(coords, address) {
+      selectedLocation = coords;
+      selectedAddress = address;
+      
+      document.getElementById('latitude').value = coords[0];
+      document.getElementById('longitude').value = coords[1];
+      document.getElementById('address').value = address;
+      
+      const addressDisplay = document.getElementById('addressDisplay');
+      addressDisplay.textContent = address;
+      addressDisplay.classList.remove('empty');
+      document.getElementById('addressSelector').classList.add('active');
+      
+      if (deliveryMarker) map.removeLayer(deliveryMarker);
+      
+      const icon = L.divIcon({
+        className: 'delivery-marker',
+        html: '📍',
+        iconSize: [40, 40],
+        iconAnchor: [20, 40]
+      });
+      
+      deliveryMarker = L.marker(coords, { icon }).addTo(map);
+      map.setView(coords, 16);
+    }
+
+    // Get address from coordinates
+    async function getAddressFromCoords(coords) {
+      try {
+        const resp = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords[0]}&lon=${coords[1]}&zoom=18&addressdetails=1`,
+          { headers: { 'User-Agent': 'LumenPerfumes/1.0' } }
+        );
+        const data = await resp.json();
+        if (data) {
+          const pretty = formatKZAddress(data);
+          return pretty || data.display_name || `${coords[0].toFixed(6)}, ${coords[1].toFixed(6)}`;
+        }
+      } catch (e) {
+        console.error('Geocoding error:', e);
+      }
+      return `${coords[0].toFixed(6)}, ${coords[1].toFixed(6)}`;
+    }
+
+    // Search addresses
+    async function searchAddresses(query) {
+      try {
+        const resp = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=kz&limit=10&addressdetails=1`,
+          { headers: { 'User-Agent': 'LumenPerfumes/1.0' } }
+        );
+        const data = await resp.json();
+        return (data || []).map(x => ({ 
+          ...x, 
+          pretty: formatKZAddress(x) || x.display_name 
+        }));
+      } catch (e) {
+        console.error('Search error:', e);
+        return [];
+      }
+    }
+
+    // Search input handler
+    document.getElementById('searchInput').addEventListener('input', function(e) {
+      clearTimeout(searchTimeout);
+      const query = e.target.value;
+      
+      if (query.length < 3) {
+        showCurrentLocationOption();
+        return;
+      }
+      
+      searchTimeout = setTimeout(async () => {
+        const results = await searchAddresses(query);
+        displaySearchResults(results);
+      }, 300);
+    });
+
+    // Clear search
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      showCurrentLocationOption();
+    }
+
+    // Show current location option
+    function showCurrentLocationOption() {
+      const resultsContainer = document.getElementById('searchResults');
+      let html = '';
+      
+      if (currentUserLocation) {
+        html += `
+          <div class="search-item" onclick="selectCurrentLocation()">
+            <div class="search-item-icon">📍</div>
+            <div class="search-item-text">
+              <div class="search-item-title">${translations[currentLang].currentLocation}</div>
+              <div class="search-item-subtitle">${translations[currentLang].gpsActive}</div>
+            </div>
+          </div>
+        `;
+      }
+      
+      resultsContainer.innerHTML = html;
+    }
+
+    // Select current location
+    async function selectCurrentLocation() {
+      if (!currentUserLocation) return;
+      
+      const address = await getAddressFromCoords(currentUserLocation);
+      setSelectedLocation(currentUserLocation, address);
+      closeAddressSearch();
+    }
+
+    // Display search results
+    function displaySearchResults(results) {
+      const c = document.getElementById('searchResults');
+      let html = '';
+      
+      if (currentUserLocation) {
+        html += `
+          <div class="search-item" onclick="selectCurrentLocation()">
+            <div class="search-item-icon">📍</div>
+            <div class="search-item-text">
+              <div class="search-item-title">${translations[currentLang].currentLocation}</div>
+              <div class="search-item-subtitle">${translations[currentLang].gpsActive}</div>
+            </div>
+          </div>`;
+      }
+      
+      results.forEach((r, i) => {
+        const parts = (r.pretty || '').split(',');
+        const title = parts[0] || (r.display_name || '').split(',')[0] || '';
+        const subtitle = parts.slice(1, 3).join(', ').trim();
+        html += `
+          <div class="search-item" onclick="selectSearchResult(${i})">
+            <div class="search-item-icon">📍</div>
+            <div class="search-item-text">
+              <div class="search-item-title">${title}</div>
+              <div class="search-item-subtitle">${subtitle}</div>
+            </div>
+          </div>`;
+      });
+      
+      c.innerHTML = html;
+      window.searchResults = results;
+    }
+
+    // Select search result
+    function selectSearchResult(index) {
+      const r = window.searchResults[index];
+      if (!r) return;
+      const coords = [parseFloat(r.lat), parseFloat(r.lon)];
+      const address = r.pretty || r.display_name;
+      setSelectedLocation(coords, address);
+      closeAddressSearch();
+    }
+
+    // Set language
+    function setLanguage(lang) {
+      currentLang = lang;
+      
+      document.getElementById('langRu').classList.toggle('active', lang === 'ru');
+      document.getElementById('langKz').classList.toggle('active', lang === 'kz');
+      
+      document.getElementById('sheetTitle').textContent = translations[lang].title;
+      document.getElementById('sheetSubtitle').textContent = translations[lang].subtitle;
+      document.getElementById('personalLabel').innerHTML = `<span class="section-icon">👤</span>${translations[lang].personalInfo}`;
+      document.getElementById('deliveryLabel').innerHTML = `<span class="section-icon">📍</span>${translations[lang].deliveryAddress}`;
+      document.getElementById('fio').placeholder = translations[lang].fullName;
+      document.getElementById('contact').placeholder = translations[lang].phoneNumber;
+      document.getElementById('submitBtn').innerHTML = translations[lang].placeOrder;
+      document.getElementById('searchInput').placeholder = translations[lang].searchPlaceholder;
+      document.getElementById('mapConfirmText').textContent = translations[lang].confirmAddress;
+      
+      if (!selectedAddress) {
+        document.getElementById('addressDisplay').textContent = translations[lang].selectAddress;
+      }
+      
+      const searchOptions = document.querySelectorAll('.option-pill');
+      searchOptions[0].innerHTML = translations[lang].textSearch;
+      searchOptions[1].innerHTML = translations[lang].mapSelect;
+      
+      // Update cart title
+      document.querySelector('.cart-title').innerHTML = `<span class="section-icon">🛒</span>${translations[lang].yourOrder}`;
+      document.querySelector('.cart-total-label').textContent = translations[lang].totalAmount;
+      
+      updateGPSStatus(document.getElementById('gpsStatus').classList.contains('active') ? 'active' : 'searching');
+    }
+
+    // Submit form
+    async function submitClientForm(event) {
+      event.preventDefault();
+      
+      const form = document.getElementById('clientForm');
+      const formData = new FormData(form);
+      
+      const fio = formData.get('fio').trim();
+      const contact = formData.get('contact').trim();
+      const address = formData.get('address').trim();
+      
+      if (!fio || !contact || !address) {
+        if (window.Telegram && Telegram.WebApp) {
+          Telegram.WebApp.showAlert(translations[currentLang].fillAllFields);
+        } else {
+          alert(translations[currentLang].fillAllFields);
+        }
+        return;
+      }
+
+      if (cartData.length === 0) {
+        if (window.Telegram && Telegram.WebApp) {
+          Telegram.WebApp.showAlert('Себетте тауар жоқ!');
+        } else {
+          alert('Себетте тауар жоқ!');
+        }
+        return;
+      }
+
+      document.getElementById('loadingOverlay').style.display = 'flex';
+
+      try {
+        const response = await fetch('/api/order/place', {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+          // Clear cart
+          localStorage.removeItem('lumen_cart');
+          
+          if (window.Telegram && Telegram.WebApp) {
+            Telegram.WebApp.showAlert(translations[currentLang].orderPlaced);
+            setTimeout(() => Telegram.WebApp.close(), 2000);
+          } else {
+            alert(translations[currentLang].orderPlaced);
+          }
+        } else {
+          throw new Error(result.message || 'Error');
+        }
+      } catch (error) {
+        console.error('Order error:', error);
+        if (window.Telegram && Telegram.WebApp) {
+          Telegram.WebApp.showAlert(translations[currentLang].error + ': ' + error.message);
+        } else {
+          alert(translations[currentLang].error + ': ' + error.message);
+        }
+      } finally {
+        document.getElementById('loadingOverlay').style.display = 'none';
+      }
+    }
+
+    // Initialize app
+    async function init() {
+      console.log('🚀 Initializing Lumen Order Form...');
+      
+      initTelegramWebApp();
+      setLanguage('kz');
+      loadCartData();
+      initMap();
+      
+      document.getElementById('clientForm').addEventListener('submit', submitClientForm);
+      
+      updateBottomSheetHeight();
+      window.addEventListener('resize', updateBottomSheetHeight);
+      
+      console.log('✅ Lumen Order Form ready!');
+    }
+
+    // Cleanup
+    window.addEventListener('beforeunload', () => {
+      if (watchId) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    });
+
+    // Close modal when clicking outside
+    document.addEventListener('click', function(event) {
+      if (event.target.classList.contains('search-modal')) {
+        closeAddressSearch();
+      }
+    });
+
+    // Start app
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+  </script>
+</body>
+</html>
