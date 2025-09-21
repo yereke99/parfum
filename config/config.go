@@ -31,7 +31,7 @@ type Config struct {
 func NewConfig() (*Config, error) {
 	cfg := &Config{
 		Port:              ":8080",
-		Token:             "8247238481:AAFhJoOsDppE_vI2i84Fuv-SHgTcXemJUyo",
+		Token:             "8071517925:AAEeXEa0rT9ALEfFCbx8SGRm_BhwzS7m-qI",
 		BaseURL:           "https://ccc8-89-219-13-135.ngrok-free.app", // Update this with your actual domain
 		DBName:            "parfume.db",
 		SavePaymentsDir:   "./payment",
