@@ -22,6 +22,13 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	StateDefault = "state_default"
+	StateCount   = "state_count"
+	StatePay     = "state_pay"
+	StateContact = "state_contact"
+)
+
 type Handler struct {
 	cfg         *config.Config
 	logger      *zap.Logger
@@ -30,6 +37,7 @@ type Handler struct {
 	parfumeRepo *repository.ParfumeRepository
 	clientRepo  *repository.ClientRepository
 	orderRepo   *repository.OrderRepository
+	redisRepo   *repository.RedisRepository
 }
 
 type Client struct {
@@ -76,11 +84,94 @@ func NewHandler(cfg *config.Config, zapLogger *zap.Logger, ctx context.Context, 
 	return h
 }
 
+func (h *Handler) StartHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	if update.Message == nil {
+		return
+	}
+
+	promoText := "24900 теңгеге парфюм жиынтық сатып алыңыз және сыйлықтар ұтып алыңыз!"
+
+	inlineKbd := &models.InlineKeyboardMarkup{
+		InlineKeyboard: [][]models.InlineKeyboardButton{
+			{
+				{
+					Text:         "🛍 Сатып алу",
+					CallbackData: "buy_parfume",
+				},
+			},
+		},
+	}
+	_, err := b.SendVideo(ctx, &bot.SendVideoParams{
+		ChatID:         update.Message.Chat.ID,
+		Video:          &models.InputFileString{Data: h.cfg.StartVideoId},
+		Caption:        promoText,
+		ReplyMarkup:    inlineKbd,
+		ProtectContent: true,
+	})
+	if err != nil {
+		h.logger.Warn("Failed to send promo photo", zap.Error(err))
+	}
+}
+
 func (h *Handler) DefaultHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	if update.Message == nil {
 		return
 	}
 
+	var userId int64
+	if update.Message != nil {
+		userId = update.Message.From.ID
+	} else if update.CallbackQuery != nil {
+		userId = update.CallbackQuery.From.ID
+	}
+
+	ok, errE := h.clientRepo.ExistsJust(ctx, userId)
+	if errE != nil {
+		h.logger.Error("Failed to check user", zap.Error(errE))
+	} else if !ok {
+		timeNow := time.Now().Format("2006-01-02 15:04:05")
+		h.logger.Info("New user", zap.String("user_id", strconv.FormatInt(userId, 10)), zap.String("date", timeNow))
+		if errN := h.clientRepo.InsertJust(ctx, domain.JustEntry{
+			UserId:         userId,
+			UserName:       update.Message.From.Username,
+			DateRegistered: timeNow,
+		}); errN != nil {
+			h.logger.Error("Failed to insert user", zap.Error(errN))
+		}
+	}
+
+	if userId == h.cfg.AdminID {
+		var fileId string
+		switch {
+		case len(update.Message.Photo) > 0:
+			fileId = update.Message.Photo[len(update.Message.Photo)-1].FileID
+		case update.Message.Video != nil:
+			fileId = update.Message.Video.FileID
+		}
+		if fileId != "" {
+			_, err := b.SendMessage(ctx, &bot.SendMessageParams{
+				ChatID: h.cfg.AdminID,
+				Text:   fileId,
+			})
+			if err != nil {
+				h.logger.Error("error send fileId to admin", zap.Error(err))
+			}
+		}
+	}
+
+	userState := h.getOrCreateUserState(ctx, userId)
+	if update.Message.Document != nil {
+		if userState.State != StatePay && userState.State != StateContact {
+			h.logger.Info("Document message", zap.String("user_id", strconv.FormatInt(update.Message.From.ID, 10)))
+			//h.JustPaid(ctx, b, update)
+			return
+		}
+	}
+
+	switch userState.State {
+	case StateDefault:
+
+	}
 	_, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.Message.Chat.ID,
 		Text:   "Welcome to Parfum Bot!",
@@ -88,6 +179,37 @@ func (h *Handler) DefaultHandler(ctx context.Context, b *bot.Bot, update *models
 	if err != nil {
 		h.logger.Error("failed to send message", zap.Error(err))
 	}
+}
+
+func (h *Handler) getOrCreateUserState(ctx context.Context, userID int64) *domain.UserState {
+	state, err := h.redisRepo.GetUserState(ctx, userID)
+	if err != nil {
+		h.logger.Error("Redis error, using fallback state",
+			zap.Error(err),
+			zap.Int64("user_id", userID))
+
+		// Return a safe default state
+		return &domain.UserState{
+			State:  "",
+			Count:  0,
+			IsPaid: false,
+		}
+	}
+
+	if state == nil {
+		state = &domain.UserState{
+			State:  "",
+			Count:  0,
+			IsPaid: false,
+		}
+
+		// Try to save, but don't fail if Redis is down
+		if err := h.redisRepo.SaveUserState(ctx, userID, state); err != nil {
+			h.logger.Warn("Failed to save state to Redis, continuing with in-memory state",
+				zap.Error(err))
+		}
+	}
+	return state
 }
 
 // SetBot sets the bot instance for the handler

@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"parfum/internal/domain"
 	"time"
@@ -174,5 +175,82 @@ func (r *ClientRepository) GetAll() ([]domain.Client, error) {
 func (r *ClientRepository) Delete(id int64) error {
 	query := "DELETE FROM clients WHERE id = ?"
 	_, err := r.db.Exec(query, id)
+	return err
+}
+
+// ExistsJust проверяет, есть ли запись в just по id_user
+func (r *ClientRepository) ExistsJust(ctx context.Context, userId int64) (bool, error) {
+	const q = `SELECT COUNT(1) FROM just WHERE id_user=?;`
+	var cnt int
+	if err := r.db.QueryRowContext(ctx, q, userId).Scan(&cnt); err != nil {
+		return false, err
+	}
+	return cnt > 0, nil
+}
+
+// ExistsClient проверяет, есть ли запись в client по id_user
+func (r *ClientRepository) ExistsClient(ctx context.Context, userID int64) (bool, error) {
+	const q = `SELECT COUNT(1) FROM client WHERE id_user = ?;`
+	var cnt int
+	if err := r.db.QueryRowContext(ctx, q, userID).Scan(&cnt); err != nil {
+		return false, err
+	}
+	return cnt > 0, nil
+}
+
+// ExistsLoto проверяет, есть ли запись в loto по id_user
+func (r *ClientRepository) ExistsLoto(ctx context.Context, userID int64) (bool, error) {
+	const q = `SELECT COUNT(1) FROM loto WHERE id_user = ?;`
+	var cnt int
+	if err := r.db.QueryRowContext(ctx, q, userID).Scan(&cnt); err != nil {
+		return false, err
+	}
+	return cnt > 0, nil
+}
+
+// ExistsGeo проверяет, есть ли запись в geo по id_user
+func (r *ClientRepository) ExistsGeo(ctx context.Context, userID int64) (bool, error) {
+	const q = `SELECT COUNT(1) FROM geo WHERE id_user = ?;`
+	var cnt int
+	if err := r.db.QueryRowContext(ctx, q, userID).Scan(&cnt); err != nil {
+		return false, err
+	}
+	return cnt > 0, nil
+}
+
+// IsClientPaid проверяет, оплачен ли клиент
+func (r *ClientRepository) IsClientPaid(ctx context.Context, userID int64) (bool, error) {
+	const q = `SELECT checks FROM client WHERE id_user = ?;`
+	var checks bool
+	err := r.db.QueryRowContext(ctx, q, userID).Scan(&checks)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, err
+	}
+	return checks, nil
+}
+
+// InsertJust вставляет запись в таблицу just с учетом новых полей (SQLite version)
+func (r *ClientRepository) InsertJust(ctx context.Context, e domain.JustEntry) error {
+	const q = `
+		INSERT OR REPLACE INTO just (id_user, userName, dataRegistred, updated_at)
+		VALUES (?, ?, ?, datetime('now'));
+	`
+	_, err := r.db.ExecContext(ctx, q, e.UserId, e.UserName, e.DateRegistered)
+	return err
+}
+
+// InsertClient вставляет запись в таблицу client с учетом новых полей (SQLite version)
+func (r *ClientRepository) InsertClient(ctx context.Context, e domain.ClientEntry) error {
+	const q = `
+		INSERT OR REPLACE INTO client (id_user, userName, fio, contact, address, dateRegister, dataPay, checks, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'));
+	`
+	_, err := r.db.ExecContext(ctx, q,
+		e.UserID, e.UserName, e.Fio, e.Contact,
+		e.Address, e.DateRegister, e.DatePay, e.Checks,
+	)
 	return err
 }

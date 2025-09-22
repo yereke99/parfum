@@ -1,5 +1,7 @@
 package domain
 
+import "database/sql"
+
 type Client struct {
 	ID         int64  `json:"id"`
 	TelegramID int64  `json:"telegram_id"`
@@ -10,4 +12,17 @@ type Client struct {
 	Longitude  string `json:"longitude"`
 	CreatedAt  string `json:"created_at"`
 	UpdatedAt  string `json:"updated_at"`
+}
+
+// ClientEntry represents a paying client in the client table
+type ClientEntry struct {
+	ID           int64          `json:"id" db:"id"`
+	UserID       int64          `json:"userID" db:"id_user"`
+	UserName     string         `json:"userName" db:"userName"`
+	Fio          sql.NullString `json:"fio" db:"fio"`
+	Contact      string         `json:"contact" db:"contact"`
+	Address      sql.NullString `json:"address" db:"address"`
+	DateRegister sql.NullString `json:"dateRegister" db:"dateRegister"`
+	DatePay      string         `json:"dataPay" db:"dataPay"`
+	Checks       bool           `json:"checks" db:"checks"`
 }
