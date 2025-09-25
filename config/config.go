@@ -41,7 +41,7 @@ func NewConfig() (*Config, error) {
 		StartPhotoId:      "AgACAgIAAxkBAANSaFP5emhGuJ5qTUamzTYon-yyPv4AAszxMRuxzqBKW2jULQVc0e4BAAMCAAN5AAM2BA",
 		StartVideoId:      "BAACAgIAAxkBAAIGQ2hs996Wo5tLH-aZu32XGWhcBjMxAALFeQACM7hoSwWQNDUxWvt-NgQ",
 		InstructorVideoId: "BAACAgIAAxkBAAIExWhf1MIAAZ0mGONHcGxOWRPHa4SRLAACXnUAAj8UAUt-qpkmBZGhqjYE",
-		Cost:              18900,
+		Cost:              24900,
 		BotUsername:       "zhad_parfume_bot",
 		Bin:               870304301209,
 		Bin2:              60301551728,

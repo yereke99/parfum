@@ -4,13 +4,16 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
 	"parfum/config"
 	"parfum/internal/domain"
 	"parfum/internal/repository"
+	"parfum/internal/service"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -23,6 +26,7 @@ import (
 )
 
 const (
+	StateStart   = "state_start"
 	StateDefault = "state_default"
 	StateCount   = "state_count"
 	StatePay     = "state_pay"
@@ -169,7 +173,13 @@ func (h *Handler) DefaultHandler(ctx context.Context, b *bot.Bot, update *models
 	}
 
 	switch userState.State {
+	case StateStart:
+		h.StartHandler(ctx, b, update)
+		return
 	case StateDefault:
+		h.DefaultHandler(ctx, b, update)
+		return
+	case StateCount:
 
 	}
 	_, err := b.SendMessage(ctx, &bot.SendMessageParams{
@@ -178,6 +188,532 @@ func (h *Handler) DefaultHandler(ctx context.Context, b *bot.Bot, update *models
 	})
 	if err != nil {
 		h.logger.Error("failed to send message", zap.Error(err))
+	}
+}
+
+func (h *Handler) BuyParfumeHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	if update.CallbackQuery == nil || update.CallbackQuery.Data != "buy_parfume" {
+		return
+	}
+
+	userId := update.CallbackQuery.From.ID
+	newState := &domain.UserState{
+		State:  StateCount,
+		Count:  0,
+		IsPaid: false,
+	}
+	if err := h.redisRepo.SaveUserState(ctx, userId, newState); err != nil {
+		h.logger.Error("Failed to save user state to Redis", zap.Error(err))
+	}
+
+	rows := make([][]models.InlineKeyboardButton, 6)
+	for i := 0; i < 6; i++ {
+		row := make([]models.InlineKeyboardButton, 5)
+		for j := 0; j < 5; j++ {
+			num := 5*j + 1
+			row[j] = models.InlineKeyboardButton{
+				Text:         strconv.Itoa(num),
+				CallbackData: fmt.Sprintf("count_%d", num),
+			}
+		}
+	}
+
+	btn := &models.InlineKeyboardMarkup{
+		InlineKeyboard: rows,
+	}
+	_, err := b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+		CallbackQueryID: update.CallbackQuery.ID,
+	})
+	if err != nil {
+		h.logger.Warn("Failed to answer callback query", zap.Error(err))
+	}
+
+	_, err = b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID:      userId,
+		Text:        "🧪 Парфюм санын таңдаңыз",
+		ReplyMarkup: btn,
+	})
+	if err != nil {
+		h.logger.Warn("Failed to answer callback query", zap.Error(err))
+	}
+}
+
+func (h *Handler) CountHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	if update.CallbackQuery == nil || !strings.HasPrefix(update.CallbackQuery.Data, "count_") {
+		return
+	}
+
+	_, _ = b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+		CallbackQueryID: update.CallbackQuery.ID,
+	})
+
+	choice := strings.Split(update.CallbackQuery.Data, "_")
+	if len(choice) != 2 {
+		_, _ = b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{
+			CallbackQueryID: update.CallbackQuery.ID,
+		})
+		return
+	}
+
+	userCount, err := strconv.Atoi(choice[1])
+	if err != nil {
+		h.logger.Warn("Failed to parse count", zap.Error(err))
+		return
+	}
+
+	totalSum := h.cfg.Cost * userCount
+
+	userId := update.CallbackQuery.From.ID
+	newState := &domain.UserState{
+		State:  StatePay,
+		Count:  userCount,
+		IsPaid: false,
+	}
+	if err := h.redisRepo.SaveUserState(ctx, userId, newState); err != nil {
+		h.logger.Warn("Failed to save user state in count handler", zap.Error(err))
+	}
+
+	inlineKbd := &models.InlineKeyboardMarkup{
+		InlineKeyboard: [][]models.InlineKeyboardButton{
+			{
+				{
+					Text: "💳 Төлем жасау",
+					URL:  "https://pay.kaspi.kz/pay/xopyuql9",
+				},
+			},
+		},
+	}
+	msgTxt := fmt.Sprintf("✅ Тамаша! Енді төмендегі сілтемеге өтіп %d теңге төлем жасап, төлемді растайтын чекті PDF форматында ботқа кері жіберіңіз.", totalSum)
+	_, sendErr := b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID:      userId,
+		Text:        msgTxt,
+		ReplyMarkup: inlineKbd,
+	})
+	if sendErr != nil {
+		h.logger.Warn("Failed to send confirmation message", zap.Error(sendErr))
+	}
+}
+
+func (h *Handler) PaidHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	if update.Message == nil || update.Message.Document == nil {
+		return
+	}
+
+	doc := update.Message.Document
+	if !strings.EqualFold(filepath.Ext(doc.FileName), ".pdf") {
+		_, _ = b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: update.Message.From.ID,
+			Text:   "❌ Қате! Тек қана PDF 📄 форматындағы файлдарды қабылдаймыз.",
+		})
+		return
+	}
+
+	userId := update.Message.From.ID
+	fileInfo, err := b.GetFile(ctx, &bot.GetFileParams{
+		FileID: doc.FileID,
+	})
+	if err != nil {
+		h.logger.Error("Failed to get file info", zap.Error(err))
+		return
+	}
+
+	fileUrl := fmt.Sprintf("https://api.telegram.org/file/bot%s/%s", h.cfg.Token, fileInfo.FilePath)
+	resp, err := http.Get(fileUrl)
+	if err != nil {
+		h.logger.Error("Failed to download file via HTTP", zap.Error(err))
+		return
+	}
+	defer resp.Body.Close()
+
+	saveDir := h.cfg.SavePaymentsDir
+	if err := os.Mkdir(saveDir, 0755); err != nil {
+		h.logger.Error("Failed to create payments directory", zap.Error(err))
+		return
+	}
+
+	timestamp := time.Now().Format("20060102_150405")
+	fileName := fmt.Sprintf("%d_%s.pdf", userId, timestamp)
+	savePath := filepath.Join(saveDir, fileName)
+
+	outFile, err := os.Create(savePath)
+	if err != nil {
+		h.logger.Error("Failed to create file on disk", zap.Error(err))
+		return
+	}
+	defer outFile.Close()
+
+	if _, err := io.Copy(outFile, resp.Body); err != nil {
+		h.logger.Error("Failed to save PDF file", zap.Error(err))
+		return
+	}
+	h.logger.Info("PDF file saved", zap.String("path", savePath))
+
+	result, err := service.ReadPDF(savePath)
+	if err != nil {
+		h.logger.Warn("Failed to read PDF file", zap.Error(err))
+	}
+	if len(result) < 4 {
+		b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: update.Message.Chat.ID,
+			Text:   "❌ Дұрыс емес форматтағы чек! 📄 Қайталап көріңіз.",
+		})
+		return
+	}
+
+	h.logger.Info("PDF file read", zap.Any("result", result))
+
+	ok, err := h.clientRepo.IsUniqueQr(ctx, result[3])
+	if err != nil {
+		h.logger.Error("error in check unique", zap.Error(err))
+		return
+	}
+	if !ok {
+		b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: update.Message.Chat.ID,
+			Text:   "⚠️ Бұл чек бұрын төленіп қойылған! 💳 ✅",
+		})
+		return
+	}
+
+	var pdfPrice, qrPdf string
+	pdfPrice = result[2]
+	qrPdf = result[3]
+	bin, _ := service.ParsePrice(result[4])
+	if result[0] == "Платеж успешно совершен" {
+		pdfPrice = result[1]
+		qrPdf = result[2]
+		bin, _ = service.ParsePrice(result[3])
+	}
+
+	actualPrice, err := service.ParsePrice(pdfPrice)
+	if err != nil {
+		h.logger.Error("Failed to parse price from PDF file", zap.Error(err))
+		b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: userId,
+			Text:   "❌ Дұрыс емес PDF файл! 📄 Қайталап көріңіз.",
+		})
+		return
+	}
+
+	state, err := h.redisRepo.GetUserState(ctx, userId)
+	if err != nil {
+		h.logger.Error("Failed to get user state from Redis", zap.Error(err))
+		return
+	}
+
+	rows := make([][]models.InlineKeyboardButton, 6)
+	for i := 0; i < 6; i++ {
+		row := make([]models.InlineKeyboardButton, 5)
+		for j := 0; j < 5; j++ {
+			num := i*5 + j + 1
+			row[j] = models.InlineKeyboardButton{
+				Text:         strconv.Itoa(num),
+				CallbackData: fmt.Sprintf("count_%d", num),
+			}
+		}
+		rows[i] = row
+	}
+
+	btn := &models.InlineKeyboardMarkup{
+		InlineKeyboard: rows,
+	}
+
+	willBePrice := []int{18000, 18100, 18200, 18300, 18400, 18500, 18600, 18700, 18800, 18990, 18900, 19000, 19500, 19800, 19890, 19900, 19990, 20000, 21000, 29000}
+	for i := 0; i < len(willBePrice); i++ {
+		if actualPrice == willBePrice[i] {
+			actualPrice = 18900
+			break
+		}
+	}
+	totalPrice := state.Count * h.cfg.Cost
+	predictedCount := actualPrice / h.cfg.Cost
+	textPrice := fmt.Sprintf("⚠️ Дұрыс емес сумма! 💰\n\n🔄 Көрсетілген сумаға сәйкес төлеңіз!\n📦 Немесе жиынтық суммасына сәйкес жиынтық санын түймелер таңдаңыз.\n\nСіздң жиынтық саны: %d", predictedCount)
+	if totalPrice != actualPrice {
+		b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID:      userId,
+			Text:        textPrice,
+			ReplyMarkup: btn,
+		})
+		return
+	}
+
+	totalLoto := state.Count * 3
+	pdfResult := domain.PdfResult{
+		Total:       state.Count,
+		ActualPrice: actualPrice,
+		Qr:          qrPdf,
+		Bin:         bin,
+	}
+
+	if err := service.Validator(h.cfg, pdfResult); err != nil {
+		h.logger.Error("error in save newState to redis", zap.Error(err))
+
+		var errorMessage string
+		if errors.Is(err, service.ErrWrongBin) {
+			// Specific message for wrong BIN in Kazakh with emojis
+			errorMessage = "❌ Қате банк картасы! 💳\n\n" +
+				"🏦 Тек біздің серіктес банк картасымен төлем жасауға болады.\n" +
+				"📋 Дұрыс банк картасын пайдаланып қайталап көріңіз!"
+		} else if errors.Is(err, service.ErrWrongPrice) {
+			// Message for wrong price
+			errorMessage = "❌ Дұрыс емес сумма! 💰\n\n" +
+				"🔍 Төлем сомасы сәйкес келмейді.\n" +
+				"📄 Чекті қайталап тексеріп көріңіз!"
+		} else {
+			// Generic error message
+			errorMessage = "❌ Дұрыс емес PDF файл! 📄\n\n" +
+				"🔄 Қайталап көріңіз немесе жаңа чек жүктеңіз."
+		}
+		_, _ = b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: userId,
+			Text:   errorMessage,
+		})
+		return
+	}
+
+	if state != nil {
+		state.IsPaid = true
+		state.State = StateContact
+		if err := h.redisRepo.SaveUserState(ctx, userId, state); err != nil {
+			h.logger.Error("Failed to save user state to Redis", zap.Error(err))
+		}
+	}
+
+	// Just increase the total sum
+	if err := h.clientRepo.IncreaseTotalSum(ctx, actualPrice); err != nil {
+		h.logger.Error("Failed to increase total sum", zap.Error(err))
+	}
+
+	tickets := make([]int, 0, totalLoto)
+	for i := 0; i < totalLoto; i++ {
+		lotoId := rand.Intn(90000000) + 10000000
+		if err := h.clientRepo.InsertLoto(ctx, domain.LotoEntry{
+			UserID:  userId,
+			LotoID:  lotoId,
+			QR:      qrPdf,
+			Receipt: savePath,
+			DatePay: time.Now().Format("2006-01-02 15:04:05"),
+			Checks:  false,
+		}); err != nil {
+			h.logger.Error("error in insert loto", zap.Error(err))
+			return
+		}
+		tickets = append(tickets, lotoId)
+	}
+
+	f, errFile := os.Open(savePath)
+	if errFile != nil {
+		h.logger.Error("Failed to open file on disk", zap.Error(errFile))
+	}
+	// Enhanced message with emojis and better formatting
+	msgText := fmt.Sprintf(
+		"✅ Сәтті төлем жасалды! 🎉\n\n"+
+			"👤 UserId: %d\n"+
+			"🧴 Косметика саны: %d\n"+
+			"💰 Төлем суммасы: %d ₸\n"+
+			"📅 Уақыт: %s\n"+
+			"📄 Чек файлы жоғарыда 👆",
+		userId,
+		state.Count,
+		actualPrice,
+		time.Now().Format("2006-01-02 15:04:05"))
+	admins := []int64{h.cfg.AdminID, h.cfg.AdminID2}
+	for i := 0; i < len(admins); i++ {
+		admin := admins[i]
+		if _, err := f.Seek(0, io.SeekStart); err != nil {
+			h.logger.Error("Failed to seek file to start", zap.Error(err))
+		}
+
+		_, errSendToAdmin := b.SendDocument(ctx, &bot.SendDocumentParams{
+			ChatID: admin,
+			Document: &models.InputFileUpload{
+				Filename: fileName,
+				Data:     f,
+			},
+			Caption: msgText,
+		})
+		if errSendToAdmin != nil {
+			h.logger.Error("Failed to send file to admin", zap.Error(errSendToAdmin))
+		}
+	}
+
+	kb := models.ReplyKeyboardMarkup{
+		Keyboard: [][]models.KeyboardButton{
+			{
+				{
+					Text:           "📲 Контактіні бөлісу",
+					RequestContact: true,
+				},
+			},
+		},
+		ResizeKeyboard:  true,
+		OneTimeKeyboard: true,
+	}
+	successMessage := "✅ Чек PDF сәтті қабылданды! 🎉\n\n" +
+		"📞 Сізбен кері байланысқа шығу үшін төмендегі\n" +
+		"📲 Контактіні бөлісу түймесін 👇 міндетті басыңыз.\n\n"
+
+	_, err = b.SendMessage(ctx, &bot.SendMessageParams{
+		ChatID:      update.Message.Chat.ID,
+		Text:        successMessage,
+		ReplyMarkup: kb,
+	})
+	if err != nil {
+		h.logger.Warn("Failed to send confirmation message", zap.Error(err))
+	}
+}
+
+func (h *Handler) ShareContactCallbackHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	if update.Message == nil {
+		return
+	}
+
+	userId := update.Message.From.ID
+
+	if update.Message.Contact == nil {
+		kb := models.ReplyKeyboardMarkup{
+			Keyboard: [][]models.KeyboardButton{
+				{
+					{
+						Text:           "📲 Контактіні бөлісу",
+						RequestContact: true,
+					},
+				},
+			},
+			ResizeKeyboard:  true,
+			OneTimeKeyboard: true,
+		}
+		_, err := b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID:      userId,
+			Text:        "Cізбен кері байланысқа шығу үшін контактіні 📲 бөлісу түймесін басыңыз.",
+			ReplyMarkup: kb,
+		})
+		if err != nil {
+			h.logger.Warn("Failed to answer callback query", zap.Error(err))
+			return
+		}
+		return
+	}
+
+	state, err := h.redisRepo.GetUserState(ctx, userId)
+	if err != nil {
+		h.logger.Error("Failed to get user state from Redis", zap.Error(err))
+		state = &domain.UserState{
+			State:  StateContact,
+			Count:  1,
+			IsPaid: true,
+		}
+	}
+	if state != nil {
+		state.Contact = update.Message.Contact.PhoneNumber
+		if err := h.redisRepo.SaveUserState(ctx, userId, state); err != nil {
+			h.logger.Error("Failed to save user state to Redis", zap.Error(err))
+		}
+	}
+	// FIX: Use state data safely with nil checks
+	userData := fmt.Sprintf("UserID: %d, State: %s, Count: %d, IsPaid: %t, Contact: %s",
+		update.Message.From.ID,
+		func() string {
+			if state != nil {
+				return state.State
+			}
+			return "unknown"
+		}(),
+		func() int {
+			if state != nil {
+				return state.Count
+			}
+			return 0
+		}(),
+		func() bool {
+			if state != nil {
+				return state.IsPaid
+			}
+			return false
+		}(),
+		func() string {
+			if state != nil {
+				return state.Contact
+			}
+			return ""
+		}())
+	h.logger.Info(userData)
+
+	// FIXED: Use direct Mini App URL without bot username
+	kb := models.InlineKeyboardMarkup{
+		InlineKeyboard: [][]models.InlineKeyboardButton{
+			{
+				{
+					Text: "📍 Мекен-жайды енгізу",
+					URL:  "https://t.me/meilly_cosmetics_bot/MeiLyCosmetics", // Direct static URL
+				},
+			},
+		},
+	}
+
+	_, errCheck := h.clientRepo.IsClientUnique(ctx, userId)
+	if errCheck != nil {
+		h.logger.Warn("Failed to check if client is paid", zap.Error(errCheck))
+		return
+	}
+
+	entry := domain.ClientEntry{
+		UserID:       userId,
+		UserName:     update.Message.From.FirstName,
+		Fio:          sql.NullString{},
+		Contact:      state.Contact,
+		Address:      sql.NullString{},
+		DateRegister: sql.NullString{},
+		DatePay:      time.Now().Format("2006-01-02 15:04:05"),
+		Checks:       false,
+	}
+
+	fmt.Println("Count: ", state.Count)
+
+	order := domain.OrderEntry{
+		UserID:       userId,
+		Quantity:     state.Count,
+		UserName:     update.Message.From.FirstName,
+		Fio:          sql.NullString{},
+		Address:      sql.NullString{},
+		DateRegister: sql.NullString{},
+		DatePay:      time.Now().Format("2006-01-02 15:04:05"),
+		Checks:       false,
+	}
+
+	if err := h.clientRepo.InsertClient(ctx, entry); err != nil {
+		h.logger.Warn("Failed to insert client", zap.Error(err))
+		b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: h.cfg.AdminID,
+			Text:   fmt.Sprintf("Error when save insert client, error: %s", err.Error()),
+		})
+	}
+
+	if err := h.clientRepo.InsertOrder(ctx, order); err != nil {
+		h.logger.Warn("Failed to insert order", zap.Error(err))
+		b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID: h.cfg.AdminID,
+			Text:   fmt.Sprintf("Error when save insert order, error: %s", err.Error()),
+		})
+	}
+
+	_, err = b.SendVideo(ctx, &bot.SendVideoParams{
+		ChatID: update.Message.Chat.ID,
+		Video: &models.InputFileString{
+			Data: h.cfg.InstructorVideoId,
+		},
+		Caption: "✅ Контактіңіз сәтті алынды! 😊\n" +
+			"Косметикалық жинақты қай мекен-жайға жеткізу керек екенін көрсетіңіз. 🚚\n" +
+			"⤵️ Мекен-жайыңызды енгізу үшін батырманы басыңыз👇\nТолығырақ 📹 видео инструкцияда",
+		ReplyMarkup:    kb,
+		ProtectContent: true,
+	})
+	if err != nil {
+		h.logger.Warn("Failed to send confirmation message", zap.Error(err))
+	}
+
+	if err := h.redisRepo.DeleteUserState(ctx, userId); err != nil {
+		h.logger.Error("Failed to delete user state from Redis", zap.Error(err))
 	}
 }
 

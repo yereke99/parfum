@@ -254,3 +254,61 @@ func (r *ClientRepository) InsertClient(ctx context.Context, e domain.ClientEntr
 	)
 	return err
 }
+
+func (r *ClientRepository) IsUniqueQr(ctx context.Context, qr string) (bool, error) {
+	const q = `SELECT COUNT(1) FROM loto WHERE qr = ?;`
+	var cnt int
+	if err := r.db.QueryRowContext(ctx, q, qr).Scan(&cnt); err != nil {
+		return false, err
+	}
+	return cnt > 0, nil
+}
+
+// IncreaseTotalSum increases the total sum by the specified amount
+func (r *ClientRepository) IncreaseTotalSum(ctx context.Context, amount int) error {
+	const q = `UPDATE money SET sum = sum + ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1;`
+	_, err := r.db.ExecContext(ctx, q, amount)
+	return err
+}
+
+// InsertLoto inserts loto entry with updated domain model
+func (r *ClientRepository) InsertLoto(ctx context.Context, e domain.LotoEntry) error {
+	const q = `
+		INSERT OR REPLACE INTO loto (id_user, id_loto, qr, who_paid, receipt, fio, contact, address, dataPay, checks, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'));
+	`
+	_, err := r.db.ExecContext(ctx, q,
+		e.UserID, e.LotoID, e.QR, e.WhoPaid,
+		e.Receipt, e.Fio, e.Contact, e.Address, e.DatePay, e.Checks,
+	)
+	return err
+}
+
+func (r *ClientRepository) InsertOrder(ctx context.Context, order domain.OrderEntry) error {
+	const q = `
+		INSERT INTO orders (id_user, userName, quantity, fio, contact, address, dateRegister, dataPay, checks)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+	`
+	_, err := r.db.ExecContext(ctx, q,
+		order.UserID,
+		order.UserName,
+		order.Quantity,
+		order.Fio,
+		order.Contact,
+		order.Address,
+		order.DateRegister,
+		order.DatePay,
+		order.Checks,
+	)
+	return err
+}
+
+// IsClientUnique возвращает true, если в client нет записи с данным id_user
+func (r *ClientRepository) IsClientUnique(ctx context.Context, userID int64) (bool, error) {
+	const q = `SELECT COUNT(1) FROM client WHERE id_user = ?;`
+	var cnt int
+	if err := r.db.QueryRowContext(ctx, q, userID).Scan(&cnt); err != nil {
+		return false, err
+	}
+	return cnt == 0, nil
+}

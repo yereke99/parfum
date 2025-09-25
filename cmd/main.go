@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"parfum/config"
@@ -80,12 +82,31 @@ func main() {
 
 	// Initialize handler with database repositories
 	handle := handler.NewHandler(cfg, zapLogger, ctx, db)
+	var deleteWebhook func(token string) error
+	deleteWebhook = func(token string) error {
+		client := &http.Client{}
+		url := fmt.Sprintf("https://api.telegram.org/bot%s/deleteWebhook", token)
+		resp, err := client.Post(url, "application/json", nil)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
 
+		return nil
+	}
 	// Initialize Telegram bot
 	var b *bot.Bot
 	if cfg.Token != "" {
+		// Replace with your bot token
+		token := cfg.Token
+		if err := deleteWebhook(token); err != nil {
+			zapLogger.Error("error creating bot config", zap.Error(err))
+			return
+		}
 		opts := []bot.Option{
 			bot.WithDefaultHandler(handle.DefaultHandler),
+			bot.WithCallbackQueryDataHandler("buy_cosmetics", bot.MatchTypePrefix, handle.BuyParfumeHandler),
+			bot.WithCallbackQueryDataHandler("count_", bot.MatchTypePrefix, handle.CountHandler),
 		}
 
 		b, err = bot.New(cfg.Token, opts...)
