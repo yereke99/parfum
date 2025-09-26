@@ -32,7 +32,7 @@ func Validator(cfg *config.Config, pdfData domain.PdfResult) error {
 		return ErrWrongPrice
 	}
 
-	if pdfData.Bin != cfg.Bin && pdfData.Bin != cfg.Bin2 && pdfData.Bin != cfg.Bin3 && pdfData.Bin != cfg.Bin4 && pdfData.Bin != cfg.Bin5 {
+	if pdfData.Bin != cfg.Bin {
 		return ErrWrongBin
 	}
 

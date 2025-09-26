@@ -22,6 +22,7 @@ import (
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 
@@ -75,11 +76,12 @@ type CartItem struct {
 	Quantity int    `json:"quantity"`
 }
 
-func NewHandler(cfg *config.Config, zapLogger *zap.Logger, ctx context.Context, db *sql.DB) *Handler {
+func NewHandler(cfg *config.Config, zapLogger *zap.Logger, ctx context.Context, db *sql.DB, redisClient *redis.Client) *Handler {
 	h := &Handler{
 		cfg:         cfg,
 		logger:      zapLogger,
 		ctx:         ctx,
+		redisRepo:   repository.NewRedisRepository(redisClient),
 		parfumeRepo: repository.NewParfumeRepository(db),
 		clientRepo:  repository.NewClientRepository(db),
 		orderRepo:   repository.NewOrderRepository(db),
@@ -93,7 +95,7 @@ func (h *Handler) StartHandler(ctx context.Context, b *bot.Bot, update *models.U
 		return
 	}
 
-	promoText := "24900 теңгеге парфюм жиынтық сатып алыңыз және сыйлықтар ұтып алыңыз!"
+	promoText := "24990 теңгеге парфюм жиынтық сатып алыңыз және сыйлықтар ұтып алыңыз!"
 
 	inlineKbd := &models.InlineKeyboardMarkup{
 		InlineKeyboard: [][]models.InlineKeyboardButton{
@@ -105,9 +107,9 @@ func (h *Handler) StartHandler(ctx context.Context, b *bot.Bot, update *models.U
 			},
 		},
 	}
-	_, err := b.SendVideo(ctx, &bot.SendVideoParams{
+	_, err := b.SendPhoto(ctx, &bot.SendPhotoParams{
 		ChatID:         update.Message.Chat.ID,
-		Video:          &models.InputFileString{Data: h.cfg.StartVideoId},
+		Photo:          &models.InputFileString{Data: h.cfg.StartPhotoId},
 		Caption:        promoText,
 		ReplyMarkup:    inlineKbd,
 		ProtectContent: true,
@@ -172,6 +174,26 @@ func (h *Handler) DefaultHandler(ctx context.Context, b *bot.Bot, update *models
 		}
 	}
 
+	if update.CallbackQuery != nil {
+		switch userState.State {
+		case StateStart:
+			h.StartHandler(ctx, b, update)
+			return
+		case StateDefault:
+			h.DefaultHandler(ctx, b, update)
+			return
+		case StateCount:
+			h.CountHandler(ctx, b, update)
+			return
+		case StatePay:
+			h.PaidHandler(ctx, b, update)
+			return
+		case StateContact:
+			h.ShareContactCallbackHandler(ctx, b, update)
+			return
+		}
+	}
+
 	switch userState.State {
 	case StateStart:
 		h.StartHandler(ctx, b, update)
@@ -180,7 +202,14 @@ func (h *Handler) DefaultHandler(ctx context.Context, b *bot.Bot, update *models
 		h.DefaultHandler(ctx, b, update)
 		return
 	case StateCount:
-
+		h.CountHandler(ctx, b, update)
+		return
+	case StatePay:
+		h.PaidHandler(ctx, b, update)
+		return
+	case StateContact:
+		h.ShareContactCallbackHandler(ctx, b, update)
+		return
 	}
 	_, err := b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.Message.Chat.ID,
@@ -216,6 +245,7 @@ func (h *Handler) BuyParfumeHandler(ctx context.Context, b *bot.Bot, update *mod
 				CallbackData: fmt.Sprintf("count_%d", num),
 			}
 		}
+		rows[i] = row
 	}
 
 	btn := &models.InlineKeyboardMarkup{
@@ -328,7 +358,6 @@ func (h *Handler) PaidHandler(ctx context.Context, b *bot.Bot, update *models.Up
 	saveDir := h.cfg.SavePaymentsDir
 	if err := os.Mkdir(saveDir, 0755); err != nil {
 		h.logger.Error("Failed to create payments directory", zap.Error(err))
-		return
 	}
 
 	timestamp := time.Now().Format("20060102_150405")
@@ -367,7 +396,7 @@ func (h *Handler) PaidHandler(ctx context.Context, b *bot.Bot, update *models.Up
 		h.logger.Error("error in check unique", zap.Error(err))
 		return
 	}
-	if !ok {
+	if ok {
 		b.SendMessage(ctx, &bot.SendMessageParams{
 			ChatID: update.Message.Chat.ID,
 			Text:   "⚠️ Бұл чек бұрын төленіп қойылған! 💳 ✅",
@@ -418,10 +447,9 @@ func (h *Handler) PaidHandler(ctx context.Context, b *bot.Bot, update *models.Up
 		InlineKeyboard: rows,
 	}
 
-	willBePrice := []int{18000, 18100, 18200, 18300, 18400, 18500, 18600, 18700, 18800, 18990, 18900, 19000, 19500, 19800, 19890, 19900, 19990, 20000, 21000, 29000}
-	for i := 0; i < len(willBePrice); i++ {
-		if actualPrice == willBePrice[i] {
-			actualPrice = 18900
+	for i := 2400; i < 2500; i++ {
+		if actualPrice == i {
+			actualPrice = 2499
 			break
 		}
 	}
@@ -479,7 +507,7 @@ func (h *Handler) PaidHandler(ctx context.Context, b *bot.Bot, update *models.Up
 		}
 	}
 
-	// Just increase the total sum
+	// Just incrFease the total sum
 	if err := h.clientRepo.IncreaseTotalSum(ctx, actualPrice); err != nil {
 		h.logger.Error("Failed to increase total sum", zap.Error(err))
 	}
@@ -645,7 +673,7 @@ func (h *Handler) ShareContactCallbackHandler(ctx context.Context, b *bot.Bot, u
 			{
 				{
 					Text: "📍 Мекен-жайды енгізу",
-					URL:  "https://t.me/meilly_cosmetics_bot/MeiLyCosmetics", // Direct static URL
+					URL:  "t.me/zhad_parfume_bot/ZhadParfume", // Direct static URL
 				},
 			},
 		},
@@ -697,14 +725,11 @@ func (h *Handler) ShareContactCallbackHandler(ctx context.Context, b *bot.Bot, u
 		})
 	}
 
-	_, err = b.SendVideo(ctx, &bot.SendVideoParams{
+	_, err = b.SendMessage(ctx, &bot.SendMessageParams{
 		ChatID: update.Message.Chat.ID,
-		Video: &models.InputFileString{
-			Data: h.cfg.InstructorVideoId,
-		},
-		Caption: "✅ Контактіңіз сәтті алынды! 😊\n" +
-			"Косметикалық жинақты қай мекен-жайға жеткізу керек екенін көрсетіңіз. 🚚\n" +
-			"⤵️ Мекен-жайыңызды енгізу үшін батырманы басыңыз👇\nТолығырақ 📹 видео инструкцияда",
+		Text: "✅ Контактіңіз сәтті алынды! 😊\n" +
+			"Парфюм жинақты қай мекен-жайға жеткізу керек екенін көрсетіңіз. 🚚\n" +
+			"⤵️ Мекен-жайыңызды енгізу үшін батырманы басыңыз👇",
 		ReplyMarkup:    kb,
 		ProtectContent: true,
 	})
@@ -726,7 +751,7 @@ func (h *Handler) getOrCreateUserState(ctx context.Context, userID int64) *domai
 
 		// Return a safe default state
 		return &domain.UserState{
-			State:  "",
+			State:  StateStart,
 			Count:  0,
 			IsPaid: false,
 		}
@@ -734,7 +759,7 @@ func (h *Handler) getOrCreateUserState(ctx context.Context, userID int64) *domai
 
 	if state == nil {
 		state = &domain.UserState{
-			State:  "",
+			State:  StateStart,
 			Count:  0,
 			IsPaid: false,
 		}
@@ -748,25 +773,408 @@ func (h *Handler) getOrCreateUserState(ctx context.Context, userID int64) *domai
 	return state
 }
 
+// Fixed Handler methods - using repository methods instead of direct DB access
+
+// GetUserAvailableQuantity gets user's available perfume quantity from unpaid orders
+func (h *Handler) GetUserAvailableQuantity(w http.ResponseWriter, r *http.Request) {
+	h.setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	telegramIDStr := r.URL.Query().Get("telegram_id")
+	if telegramIDStr == "" {
+		http.Error(w, "telegram_id parameter required", http.StatusBadRequest)
+		return
+	}
+
+	telegramID, err := strconv.ParseInt(telegramIDStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid telegram_id", http.StatusBadRequest)
+		return
+	}
+
+	// Use repository method instead of direct DB access
+	orders, err := h.orderRepo.GetUnpaidOrdersByUser(telegramID)
+	if err != nil {
+		h.logger.Error("Error getting user orders", zap.Error(err))
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+
+	var totalQuantity int
+	var orderDetails []map[string]interface{}
+
+	for _, order := range orders {
+		orderQuantity := 0
+		if order.Quantity != nil {
+			orderQuantity = *order.Quantity
+		}
+
+		// Parse existing perfume selections
+		selectedPerfumes := []string{}
+		usedQuantity := 0
+		if order.Parfumes != "" {
+			parts := strings.Split(order.Parfumes, ",")
+			for _, part := range parts {
+				if trimmed := strings.TrimSpace(part); trimmed != "" {
+					selectedPerfumes = append(selectedPerfumes, trimmed)
+					// Extract quantity from format "name: quantity"
+					if colonIndex := strings.Index(trimmed, ":"); colonIndex > 0 {
+						if quantityStr := strings.TrimSpace(trimmed[colonIndex+1:]); quantityStr != "" {
+							if qty, err := strconv.Atoi(quantityStr); err == nil {
+								usedQuantity += qty
+							}
+						}
+					}
+				}
+			}
+		}
+
+		availableInThisOrder := orderQuantity - usedQuantity
+		if availableInThisOrder > 0 {
+			totalQuantity += availableInThisOrder
+		}
+
+		orderDetails = append(orderDetails, map[string]interface{}{
+			"id":                order.ID,
+			"total_quantity":    orderQuantity,
+			"used_quantity":     usedQuantity,
+			"available":         availableInThisOrder,
+			"selected_perfumes": selectedPerfumes,
+			"created_at":        order.CreatedAt,
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":            true,
+		"available_quantity": totalQuantity,
+		"orders":             orderDetails,
+	})
+}
+
+// SavePerfumeSelection saves user's perfume selection
+func (h *Handler) SavePerfumeSelection(w http.ResponseWriter, r *http.Request) {
+	h.setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		TelegramID       int64                    `json:"telegram_id"`
+		SelectedPerfumes []map[string]interface{} `json:"selected_perfumes"`
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	if req.TelegramID == 0 {
+		http.Error(w, "telegram_id required", http.StatusBadRequest)
+		return
+	}
+
+	if len(req.SelectedPerfumes) == 0 {
+		http.Error(w, "No perfumes selected", http.StatusBadRequest)
+		return
+	}
+
+	// Calculate total selected quantity
+	totalSelected := 0
+	for _, perfume := range req.SelectedPerfumes {
+		if qty, ok := perfume["quantity"].(float64); ok {
+			totalSelected += int(qty)
+		}
+	}
+
+	// Get user's available quantity using repository method
+	availableQuantity, err := h.orderRepo.GetAvailableQuantityForUser(req.TelegramID)
+	if err != nil {
+		h.logger.Error("Error getting available quantity", zap.Error(err))
+		http.Error(w, "Error checking available quantity", http.StatusInternalServerError)
+		return
+	}
+
+	if totalSelected > availableQuantity {
+		http.Error(w, fmt.Sprintf("Not enough quantity available. You have %d, trying to select %d",
+			availableQuantity, totalSelected), http.StatusBadRequest)
+		return
+	}
+
+	// Build perfume selection string (format: "name: quantity, name: quantity")
+	var parfumeSelections []string
+	for _, perfume := range req.SelectedPerfumes {
+		name, nameOk := perfume["name"].(string)
+		qty, qtyOk := perfume["quantity"].(float64)
+		if nameOk && qtyOk && qty > 0 {
+			parfumeSelections = append(parfumeSelections, fmt.Sprintf("%s: %d", name, int(qty)))
+		}
+	}
+
+	parfumeString := strings.Join(parfumeSelections, ", ")
+
+	// Get unpaid orders to find the best one to update
+	orders, err := h.orderRepo.GetUnpaidOrdersByUser(req.TelegramID)
+	if err != nil {
+		h.logger.Error("Error finding orders", zap.Error(err))
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+
+	var targetOrderID int64 = -1
+	for _, order := range orders {
+		if order.Quantity == nil {
+			continue
+		}
+		orderQuantity := *order.Quantity
+
+		// Calculate used quantity in this order
+		usedQuantity := 0
+		if order.Parfumes != "" {
+			parts := strings.Split(order.Parfumes, ",")
+			for _, part := range parts {
+				if trimmed := strings.TrimSpace(part); trimmed != "" {
+					if colonIndex := strings.Index(trimmed, ":"); colonIndex > 0 {
+						if quantityStr := strings.TrimSpace(trimmed[colonIndex+1:]); quantityStr != "" {
+							if qty, err := strconv.Atoi(quantityStr); err == nil {
+								usedQuantity += qty
+							}
+						}
+					}
+				}
+			}
+		}
+
+		availableInThisOrder := orderQuantity - usedQuantity
+		if availableInThisOrder > 0 {
+			targetOrderID = order.ID
+			break
+		}
+	}
+
+	if targetOrderID == -1 {
+		http.Error(w, "No available orders found", http.StatusBadRequest)
+		return
+	}
+
+	// Update the order with perfume selection using repository method
+	err = h.orderRepo.UpdatePerfumeSelection(targetOrderID, parfumeString)
+	if err != nil {
+		h.logger.Error("Error updating order with perfumes", zap.Error(err))
+		http.Error(w, "Error saving selection", http.StatusInternalServerError)
+		return
+	}
+
+	h.logger.Info("Perfume selection saved",
+		zap.Int64("telegram_id", req.TelegramID),
+		zap.Int64("order_id", targetOrderID),
+		zap.String("perfumes", parfumeString))
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":  true,
+		"message":  "Perfume selection saved successfully",
+		"order_id": targetOrderID,
+		"perfumes": parfumeString,
+	})
+}
+
+// UpdateOrderWithClientInfo updates order with client information after address form
+func (h *Handler) UpdateOrderWithClientInfo(w http.ResponseWriter, r *http.Request) {
+	h.setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	err := r.ParseMultipartForm(10 << 20)
+	if err != nil {
+		http.Error(w, "Error parsing form", http.StatusBadRequest)
+		return
+	}
+
+	telegramIDStr := r.FormValue("telegram_id")
+	fio := r.FormValue("fio")
+	contact := r.FormValue("contact")
+	address := r.FormValue("address")
+	latitudeStr := r.FormValue("latitude")
+	longitudeStr := r.FormValue("longitude")
+
+	if telegramIDStr == "" || fio == "" || contact == "" || address == "" {
+		http.Error(w, "Required fields missing", http.StatusBadRequest)
+		return
+	}
+
+	telegramID, err := strconv.ParseInt(telegramIDStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid telegram_id", http.StatusBadRequest)
+		return
+	}
+
+	// Parse coordinates if provided
+	var latitude, longitude *float64
+	if latitudeStr != "" {
+		if lat, err := strconv.ParseFloat(latitudeStr, 64); err == nil {
+			latitude = &lat
+		}
+	}
+	if longitudeStr != "" {
+		if lng, err := strconv.ParseFloat(longitudeStr, 64); err == nil {
+			longitude = &lng
+		}
+	}
+
+	// Find the order with perfume selection using repository method
+	order, err := h.orderRepo.GetOrderWithPerfumeSelection(telegramID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "No perfume selection found. Please select perfumes first", http.StatusBadRequest)
+		} else {
+			h.logger.Error("Error finding order", zap.Error(err))
+			http.Error(w, "Database error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Update the order with client information including coordinates
+	err = h.orderRepo.UpdateClientInfoWithCoordinates(order.ID, fio, contact, address)
+	if err != nil {
+		h.logger.Error("Error updating order with client info", zap.Error(err))
+		http.Error(w, "Error saving client information", http.StatusInternalServerError)
+		return
+	}
+
+	// Send success message to user via Telegram
+	if h.bot != nil {
+		go h.sendOrderConfirmationMessage(telegramID, order.ID, order.UserName, order.Parfumes, fio, contact, address)
+	}
+
+	h.logger.Info("Order updated with client info",
+		zap.Int64("telegram_id", telegramID),
+		zap.Int64("order_id", order.ID),
+		zap.String("fio", fio),
+		zap.String("contact", contact),
+		zap.String("address", address),
+		zap.Any("latitude", latitude),
+		zap.Any("longitude", longitude))
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":  true,
+		"message":  "Order completed successfully",
+		"order_id": order.ID,
+	})
+}
+
+// Send order confirmation message to Telegram
+func (h *Handler) sendOrderConfirmationMessage(telegramID, orderID int64, userName, parfumes, fio, contact, address string) {
+	if h.bot == nil {
+		h.logger.Error("Bot not initialized")
+		return
+	}
+
+	// Build message
+	var messageText strings.Builder
+	messageText.WriteString("✅ Тапсырыс сәтті рәсімделді!\n\n")
+	messageText.WriteString(fmt.Sprintf("📦 Тапсырыс №: %d\n", orderID))
+	messageText.WriteString(fmt.Sprintf("👤 Клиент: %s\n", fio))
+	messageText.WriteString(fmt.Sprintf("📱 Телефон: %s\n", contact))
+	messageText.WriteString(fmt.Sprintf("📍 Мекенжай: %s\n\n", address))
+	messageText.WriteString("🌸 Таңдалған парфюмдер:\n")
+	messageText.WriteString(fmt.Sprintf("_%s_\n\n", parfumes))
+	messageText.WriteString("🚚 Жеткізу туралы ақпарат:\n")
+	messageText.WriteString("Біздің менеджер сізбен 48 сағат ішінде байланысады.\n\n")
+	messageText.WriteString("Рахмет! 💝")
+
+	// Send message to user
+	_, err := h.bot.SendMessage(h.ctx, &bot.SendMessageParams{
+		ChatID: telegramID,
+		Text:   messageText.String(),
+	})
+
+	if err != nil {
+		h.logger.Error("Failed to send confirmation message to user",
+			zap.Error(err),
+			zap.Int64("telegram_id", telegramID),
+			zap.Int64("order_id", orderID))
+	} else {
+		h.logger.Info("Order confirmation sent to user successfully",
+			zap.Int64("telegram_id", telegramID),
+			zap.Int64("order_id", orderID))
+	}
+
+	// Send notification to admin
+	adminMessage := fmt.Sprintf(
+		"📋 Жаңа тапсырыс!\n\n"+
+			"🆔 Тапсырыс: %d\n"+
+			"👤 Клиент: %s (@%s)\n"+
+			"📱 Телефон: %s\n"+
+			"📍 Мекенжай: %s\n"+
+			"🌸 Парфюмдер: %s\n"+
+			"⏰ Уақыт: %s",
+		orderID, fio, userName, contact, address, parfumes,
+		time.Now().Format("2006-01-02 15:04:05"))
+
+	admins := []int64{h.cfg.AdminID, h.cfg.AdminID2}
+	for _, adminID := range admins {
+		if adminID != 0 {
+			_, err := h.bot.SendMessage(h.ctx, &bot.SendMessageParams{
+				ChatID: adminID,
+				Text:   adminMessage,
+			})
+			if err != nil {
+				h.logger.Error("Failed to send admin notification",
+					zap.Error(err),
+					zap.Int64("admin_id", adminID))
+			}
+		}
+	}
+}
+
 // SetBot sets the bot instance for the handler
 func (h *Handler) SetBot(b *bot.Bot) {
 	h.bot = b
 }
 
+// Update your StartWebServer method to include new routes
 func (h *Handler) StartWebServer(ctx context.Context, b *bot.Bot) {
 	h.SetBot(b)
 
 	// Create required directories
-	os.MkdirAll("./static", 0755)
-	os.MkdirAll("./files", 0755)
-	os.MkdirAll("./payments", 0755)
-	os.MkdirAll("./photo", 0755)
+	directories := []string{"./static", "./files", "./payments", "./photo"}
+	for _, dir := range directories {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			h.logger.Error("Failed to create directory", zap.String("dir", dir), zap.Error(err))
+		} else {
+			h.logger.Info("Directory created/verified", zap.String("dir", dir))
+		}
+	}
 
 	// CORS Middleware
 	corsMiddleware := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
 			w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Requested-With")
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
 
@@ -784,9 +1192,17 @@ func (h *Handler) StartWebServer(ctx context.Context, b *bot.Bot) {
 	// Static files
 	mux.Handle("/static/", corsMiddleware(http.StripPrefix("/static/", http.FileServer(http.Dir("./static/")))))
 	mux.Handle("/files/", corsMiddleware(http.StripPrefix("/files/", http.FileServer(http.Dir("./files/")))))
-	mux.Handle("/photo/", corsMiddleware(http.StripPrefix("/photo/", http.FileServer(http.Dir("./photo/")))))
+	mux.Handle("/photo/", corsMiddleware(h.createPhotoHandler()))
 
-	// Page routes
+	// Main Mini App route - serves parfume.html
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		h.setCORSHeaders(w)
+		// Serve parfume.html for Mini App
+		path := "./static/parfume.html"
+		http.ServeFile(w, r, path)
+	})
+
+	// Other page routes
 	mux.HandleFunc("/parfume", func(w http.ResponseWriter, r *http.Request) {
 		h.setCORSHeaders(w)
 		path := "./static/parfume.html"
@@ -805,6 +1221,7 @@ func (h *Handler) StartWebServer(ctx context.Context, b *bot.Bot) {
 		http.ServeFile(w, r, path)
 	})
 
+	// Admin routes
 	mux.HandleFunc("/admin/add-perfume", func(w http.ResponseWriter, r *http.Request) {
 		h.setCORSHeaders(w)
 		if r.Method == "OPTIONS" {
@@ -825,13 +1242,7 @@ func (h *Handler) StartWebServer(ctx context.Context, b *bot.Bot) {
 		http.ServeFile(w, r, path)
 	})
 
-	mux.HandleFunc("/prize", func(w http.ResponseWriter, r *http.Request) {
-		h.setCORSHeaders(w)
-		path := "./static/prize.html"
-		http.ServeFile(w, r, path)
-	})
-
-	// Perfume API endpoints
+	// API endpoints
 	mux.HandleFunc("/api/parfumes", h.handleGetPerfumes)
 	mux.HandleFunc("/api/parfume/", h.handleGetPerfume)
 	mux.HandleFunc("/api/add-parfume", h.handleAddPerfume)
@@ -839,12 +1250,12 @@ func (h *Handler) StartWebServer(ctx context.Context, b *bot.Bot) {
 	mux.HandleFunc("/api/delete-parfume/", h.handleDeletePerfume)
 	mux.HandleFunc("/api/search-parfumes", h.handleSearchPerfumes)
 
-	// Client API endpoints
-	mux.HandleFunc("/api/client/data", h.handleGetClientData)
-	mux.HandleFunc("/api/client/save", h.handleSaveClient)
+	// New perfume selection API endpoints
+	mux.HandleFunc("/api/user/available-quantity", h.GetUserAvailableQuantity)
+	mux.HandleFunc("/api/user/save-perfume-selection", h.SavePerfumeSelection)
+	mux.HandleFunc("/api/order/complete", h.UpdateOrderWithClientInfo)
 
-	// Order API endpoints
-	mux.HandleFunc("/api/order/place", h.handlePlaceOrder)
+	// Existing order endpoints
 	mux.HandleFunc("/api/orders", h.handleGetOrders)
 	mux.HandleFunc("/api/order/", h.handleGetOrder)
 
@@ -861,14 +1272,71 @@ func (h *Handler) StartWebServer(ctx context.Context, b *bot.Bot) {
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"status":    "healthy",
 			"timestamp": time.Now().Format(time.RFC3339),
-			"service":   "lumen-perfume-api",
-			"version":   "3.0.0-lumen",
+			"service":   "zhad-perfume-api",
+			"version":   "3.1.0-perfume-selection",
 		})
 	})
+
+	h.logger.Info("Starting web server with perfume selection logic", zap.String("port", h.cfg.Port))
 
 	if err := http.ListenAndServe(h.cfg.Port, mux); err != nil {
 		h.logger.Fatal("Failed to start web server", zap.Error(err))
 	}
+}
+
+// Create photo handler (helper method)
+func (h *Handler) createPhotoHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		filename := strings.TrimPrefix(r.URL.Path, "/photo/")
+		if filename == "" {
+			h.logger.Warn("Empty photo filename requested", zap.String("url", r.URL.Path))
+			http.NotFound(w, r)
+			return
+		}
+
+		filePath := filepath.Join("./photo", filename)
+
+		h.logger.Info("Photo request",
+			zap.String("url", r.URL.Path),
+			zap.String("filename", filename),
+			zap.String("filepath", filePath))
+
+		fileInfo, err := os.Stat(filePath)
+		if os.IsNotExist(err) {
+			h.logger.Warn("Photo file not found", zap.String("filepath", filePath))
+			http.NotFound(w, r)
+			return
+		} else if err != nil {
+			h.logger.Error("Error accessing photo file", zap.Error(err))
+			http.Error(w, "Error accessing file", http.StatusInternalServerError)
+			return
+		}
+
+		h.logger.Info("Photo file found",
+			zap.String("filepath", filePath),
+			zap.Int64("size", fileInfo.Size()))
+
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+
+		ext := strings.ToLower(filepath.Ext(filename))
+		switch ext {
+		case ".jpg", ".jpeg":
+			w.Header().Set("Content-Type", "image/jpeg")
+		case ".png":
+			w.Header().Set("Content-Type", "image/png")
+		case ".gif":
+			w.Header().Set("Content-Type", "image/gif")
+		case ".webp":
+			w.Header().Set("Content-Type", "image/webp")
+		case ".svg":
+			w.Header().Set("Content-Type", "image/svg+xml")
+		default:
+			w.Header().Set("Content-Type", "application/octet-stream")
+		}
+
+		http.ServeFile(w, r, filePath)
+		h.logger.Info("Photo served successfully", zap.String("filename", filename))
+	})
 }
 
 // Get all perfumes
@@ -1412,12 +1880,8 @@ func (h *Handler) handlePlaceOrder(w http.ResponseWriter, r *http.Request) {
 
 	// Create order
 	order := &domain.Order{
-		TelegramID:  telegramID,
-		ClientID:    savedClient.ID,
-		CartData:    cartDataStr,
-		TotalAmount: totalAmount,
-		Status:      "pending",
-		PaymentLink: paymentLink,
+		ID:     telegramID,
+		IDUser: savedClient.ID,
 	}
 
 	err = h.orderRepo.Create(order)

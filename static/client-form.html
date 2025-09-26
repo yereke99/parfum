@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>Lumen | Тапсырыс беру</title>
+  <title>ZHAD | Тапсырыс беру</title>
   
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -298,7 +298,7 @@
       line-height: 1.5;
     }
 
-    /* Lumen Brand Header */
+    /* Brand Header */
     .brand-header {
       display: flex;
       align-items: center;
@@ -317,6 +317,30 @@
       font-size: 16px;
       font-weight: bold;
       color: white;
+    }
+
+    /* Back Button */
+    .back-btn {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      width: 44px;
+      height: 44px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: var(--lumen-text);
+      transition: all 0.2s;
+      z-index: 15;
+    }
+
+    .back-btn:hover {
+      background: var(--glass-border);
     }
 
     /* Form Sections */
@@ -812,82 +836,16 @@
       to { transform: rotate(360deg); }
     }
 
-    /* Cart Summary */
-    .cart-summary {
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 24px;
-      backdrop-filter: blur(10px);
-    }
-
-    .cart-title {
-      font-size: 18px;
+    /* No Selection Alert */
+    .no-selection-alert {
+      background: linear-gradient(135deg, var(--lumen-danger), #dc2626);
+      color: white;
+      padding: 16px;
+      text-align: center;
       font-weight: 600;
-      color: var(--lumen-text);
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .cart-item {
-      display: flex;
-      justify-content: between;
-      align-items: center;
-      padding: 12px 0;
-      border-bottom: 1px solid var(--lumen-border);
-    }
-
-    .cart-item:last-child {
-      border-bottom: none;
-    }
-
-    .cart-item-info {
-      flex: 1;
-    }
-
-    .cart-item-name {
-      font-size: 16px;
-      font-weight: 500;
-      color: var(--lumen-text);
-      margin-bottom: 4px;
-    }
-
-    .cart-item-details {
-      font-size: 14px;
-      color: var(--lumen-text-secondary);
-    }
-
-    .cart-item-price {
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--lumen-secondary);
-    }
-
-    .cart-total {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-top: 16px;
-      margin-top: 16px;
-      border-top: 2px solid var(--lumen-border);
-    }
-
-    .cart-total-label {
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--lumen-text);
-    }
-
-    .cart-total-amount {
-      font-size: 20px;
-      font-weight: 700;
-      background: linear-gradient(135deg, var(--lumen-primary), var(--lumen-secondary));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      margin: 16px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(239, 68, 68, 0.3);
     }
 
     /* Utility Classes */
@@ -961,6 +919,9 @@
     <!-- Map -->
     <div id="mainMap"></div>
 
+    <!-- Back Button -->
+    <button class="back-btn" onclick="goBack()">←</button>
+
     <!-- Status Bar -->
     <div class="status-bar">
       <div class="gps-status" id="gpsStatus">
@@ -993,34 +954,26 @@
       <span id="mapConfirmText">Таңдау</span>
     </button>
 
+    <!-- No Selection Alert -->
+    <div class="no-selection-alert hidden" id="noSelectionAlert">
+      😔 Алдымен парфюм таңдаңыз
+    </div>
+
     <!-- Bottom Sheet -->
     <div class="bottom-sheet" id="bottomSheet">
       <div class="sheet-handle"></div>
       
       <div class="sheet-header">
         <div class="brand-header">
-          <div class="brand-icon">L</div>
+          <div class="brand-icon">Z</div>
           <div>
             <h1 class="sheet-title" id="sheetTitle">Тапсырыс беру</h1>
-            <p class="sheet-subtitle" id="sheetSubtitle">Lumen парфюмдерін тапсырыс беру үшін мәліметтеріңізді енгізіңіз</p>
+            <p class="sheet-subtitle" id="sheetSubtitle">ZHAD парфюмдерін тапсырыс беру үшін мәліметтеріңізді енгізіңіз</p>
           </div>
         </div>
       </div>
       
       <div class="sheet-content">
-        <!-- Cart Summary -->
-        <div class="cart-summary" id="cartSummary">
-          <div class="cart-title">
-            <span class="section-icon">🛒</span>
-            Сіздің тапсырысыңыз
-          </div>
-          <div id="cartItems"></div>
-          <div class="cart-total">
-            <div class="cart-total-label">Жалпы сома:</div>
-            <div class="cart-total-amount" id="cartTotal">0₸</div>
-          </div>
-        </div>
-
         <form id="clientForm">
           <!-- Personal Info Section -->
           <div class="form-section">
@@ -1068,11 +1021,9 @@
           <input type="hidden" name="latitude" id="latitude">
           <input type="hidden" name="longitude" id="longitude">
           <input type="hidden" name="telegram_id" id="telegram_id">
-          <input type="hidden" name="cart_data" id="cart_data">
-          <input type="hidden" name="total_amount" id="total_amount">
 
           <button type="submit" class="submit-btn" id="submitBtn">
-            💫 Тапсырыс беру
+            ✅ Тапсырыс беру
           </button>
         </form>
       </div>
@@ -1121,20 +1072,18 @@
     let watchId = null;
     let telegramId = null;
     let telegramUser = null;
-    let cartData = [];
-    let totalAmount = 0;
 
     // Translations
     const translations = {
       ru: {
         title: 'Оформление заказа',
-        subtitle: 'Введите данные для заказа парфюмерии Lumen',
+        subtitle: 'Введите данные для заказа парфюмерии ZHAD',
         personalInfo: 'ЛИЧНЫЕ ДАННЫЕ',
         deliveryAddress: 'АДРЕС ДОСТАВКИ',
         fullName: 'Введите ваше полное имя',
         phoneNumber: 'Номер телефона',
         selectAddress: 'Нажмите для выбора адреса',
-        placeOrder: '💫 Оформить заказ',
+        placeOrder: '✅ Оформить заказ',
         searchPlaceholder: 'Поиск адреса...',
         textSearch: '✏️ Текстовый поиск',
         mapSelect: '🗺️ Выбрать на карте',
@@ -1144,21 +1093,21 @@
         gpsError: 'GPS недоступен',
         currentLocation: '📍 Мое местоположение',
         fillAllFields: 'Заполните все поля',
-        orderPlaced: 'Заказ оформлен!',
+        orderCompleted: 'Заказ оформлен!',
         error: 'Ошибка',
         loading: 'Загрузка...',
-        yourOrder: 'Ваш заказ',
-        totalAmount: 'Общая сумма:'
+        noSelectionAlert: '😔 Сначала выберите парфюмы',
+        backToSelection: '← Вернуться к выбору'
       },
       kz: {
         title: 'Тапсырыс беру',
-        subtitle: 'Lumen парфюмдерін тапсырыс беру үшін мәліметтеріңізді енгізіңіз',
+        subtitle: 'ZHAD парфюмдерін тапсырыс беру үшін мәліметтеріңізді енгізіңіз',
         personalInfo: 'ЖЕКЕ МӘЛІМЕТТЕР',
         deliveryAddress: 'ЖЕТКІЗУ МЕКЕНЖАЙЫ',
         fullName: 'Толық атыңызды енгізіңіз',
         phoneNumber: 'Телефон нөмірі',
         selectAddress: 'Мекенжай таңдау үшін басыңыз',
-        placeOrder: '💫 Тапсырыс беру',
+        placeOrder: '✅ Тапсырыс беру',
         searchPlaceholder: 'Мекенжайды іздеу...',
         textSearch: '✏️ Мәтін арқылы',
         mapSelect: '🗺️ Картадан таңдау',
@@ -1168,17 +1117,17 @@
         gpsError: 'GPS қол жетімді емес',
         currentLocation: '📍 Менің орналасқан жерім',
         fillAllFields: 'Барлық өрістерді толтырыңыз',
-        orderPlaced: 'Тапсырыс берілді!',
+        orderCompleted: 'Тапсырыс берілді!',
         error: 'Қате',
         loading: 'Жүктелуде...',
-        yourOrder: 'Сіздің тапсырысыңыз',
-        totalAmount: 'Жалпы сома:'
+        noSelectionAlert: '😔 Алдымен парфюм таңдаңыз',
+        backToSelection: '← Таңдауға оралу'
       }
     };
 
     // Initialize Telegram WebApp
     function initTelegramWebApp() {
-      console.log('🚀 Initializing Lumen Order Form...');
+      console.log('🚀 Initializing ZHAD Order Form...');
       
       if (!window.Telegram || !Telegram.WebApp) {
         console.warn('⚠️ Telegram WebApp not available');
@@ -1236,68 +1185,59 @@
       }
     }
 
-    // Load cart data from localStorage or URL params
-    function loadCartData() {
+    // Check if user has perfume selection
+    async function checkPerfumeSelection() {
+      if (!telegramId) {
+        console.warn('No Telegram ID available');
+        showNoSelectionAlert();
+        return false;
+      }
+
       try {
-        // Try to get cart from localStorage first
-        const savedCart = localStorage.getItem('lumen_cart');
-        if (savedCart) {
-          cartData = JSON.parse(savedCart);
-        } else {
-          // Fallback: get from URL params if available
-          const urlParams = new URLSearchParams(window.location.search);
-          const cartParam = urlParams.get('cart');
-          if (cartParam) {
-            cartData = JSON.parse(decodeURIComponent(cartParam));
+        const response = await fetch(`/api/user/available-quantity?telegram_id=${telegramId}`);
+        const data = await response.json();
+        
+        if (data.success && data.orders && data.orders.length > 0) {
+          // Check if user has any perfume selections
+          let hasSelection = false;
+          for (const order of data.orders) {
+            if (order.selected_perfumes && order.selected_perfumes.length > 0) {
+              hasSelection = true;
+              break;
+            }
           }
+          
+          if (!hasSelection) {
+            showNoSelectionAlert();
+            return false;
+          }
+          
+          return true;
+        } else {
+          showNoSelectionAlert();
+          return false;
         }
-        
-        // Calculate total
-        totalAmount = cartData.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        
-        // Update form
-        document.getElementById('cart_data').value = JSON.stringify(cartData);
-        document.getElementById('total_amount').value = totalAmount;
-        
-        displayCart();
-        
       } catch (error) {
-        console.error('Error loading cart data:', error);
-        cartData = [];
-        totalAmount = 0;
+        console.error('Error checking perfume selection:', error);
+        showNoSelectionAlert();
+        return false;
       }
     }
 
-    // Display cart summary
-    function displayCart() {
-      const cartItemsContainer = document.getElementById('cartItems');
-      const cartTotalElement = document.getElementById('cartTotal');
+    // Show no selection alert
+    function showNoSelectionAlert() {
+      const alert = document.getElementById('noSelectionAlert');
+      alert.textContent = translations[currentLang].noSelectionAlert;
+      alert.classList.remove('hidden');
       
-      if (cartData.length === 0) {
-        cartItemsContainer.innerHTML = `
-          <div style="text-align: center; padding: 20px; color: var(--lumen-text-muted);">
-            Себет бос
-          </div>
-        `;
-        cartTotalElement.textContent = '0₸';
-        return;
-      }
-      
-      let itemsHTML = '';
-      cartData.forEach(item => {
-        itemsHTML += `
-          <div class="cart-item">
-            <div class="cart-item-info">
-              <div class="cart-item-name">${item.name}</div>
-              <div class="cart-item-details">${item.quantity} дана</div>
-            </div>
-            <div class="cart-item-price">${(item.price * item.quantity).toLocaleString()}₸</div>
-          </div>
-        `;
-      });
-      
-      cartItemsContainer.innerHTML = itemsHTML;
-      cartTotalElement.textContent = totalAmount.toLocaleString() + '₸';
+      // Hide form elements
+      document.querySelector('.search-container')?.style.setProperty('display', 'none');
+      document.getElementById('bottomSheet').style.display = 'none';
+    }
+
+    // Go back to perfume selection
+    function goBack() {
+      window.location.href = '/parfume';
     }
 
     // Update viewport height
@@ -1326,7 +1266,7 @@
     // Initialize Map
     function initMap() {
       try {
-        console.log('🗺️ Initializing Lumen map...');
+        console.log('🗺️ Initializing ZHAD map...');
         
         const initialCenter = currentUserLocation || [43.238949, 76.889709];
         
@@ -1341,7 +1281,7 @@
           wheelDebounceTime: 40
         });
 
-        // Dark tiles for Lumen theme
+        // Dark tiles
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
           maxZoom: 19,
           subdomains: 'abcd',
@@ -1471,7 +1411,7 @@
       }
     }
 
-    // Address search functions (same as before)
+    // Address search functions
     function openAddressSearch() {
       const modal = document.getElementById('searchModal');
       modal.style.display = 'flex';
@@ -1613,7 +1553,7 @@
       try {
         const resp = await fetch(
           `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords[0]}&lon=${coords[1]}&zoom=18&addressdetails=1`,
-          { headers: { 'User-Agent': 'LumenPerfumes/1.0' } }
+          { headers: { 'User-Agent': 'ZHADPerfumes/1.0' } }
         );
         const data = await resp.json();
         if (data) {
@@ -1631,7 +1571,7 @@
       try {
         const resp = await fetch(
           `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=kz&limit=10&addressdetails=1`,
-          { headers: { 'User-Agent': 'LumenPerfumes/1.0' } }
+          { headers: { 'User-Agent': 'ZHADPerfumes/1.0' } }
         );
         const data = await resp.json();
         return (data || []).map(x => ({ 
@@ -1760,13 +1700,16 @@
         document.getElementById('addressDisplay').textContent = translations[lang].selectAddress;
       }
       
-      const searchOptions = document.querySelectorAll('.option-pill');
-      searchOptions[0].innerHTML = translations[lang].textSearch;
-      searchOptions[1].innerHTML = translations[lang].mapSelect;
+      // Update no selection alert if visible
+      if (!document.getElementById('noSelectionAlert').classList.contains('hidden')) {
+        document.getElementById('noSelectionAlert').textContent = translations[lang].noSelectionAlert;
+      }
       
-      // Update cart title
-      document.querySelector('.cart-title').innerHTML = `<span class="section-icon">🛒</span>${translations[lang].yourOrder}`;
-      document.querySelector('.cart-total-label').textContent = translations[lang].totalAmount;
+      const searchOptions = document.querySelectorAll('.option-pill');
+      if (searchOptions.length >= 2) {
+        searchOptions[0].innerHTML = translations[lang].textSearch;
+        searchOptions[1].innerHTML = translations[lang].mapSelect;
+      }
       
       updateGPSStatus(document.getElementById('gpsStatus').classList.contains('active') ? 'active' : 'searching');
     }
@@ -1791,19 +1734,10 @@
         return;
       }
 
-      if (cartData.length === 0) {
-        if (window.Telegram && Telegram.WebApp) {
-          Telegram.WebApp.showAlert('Себетте тауар жоқ!');
-        } else {
-          alert('Себетте тауар жоқ!');
-        }
-        return;
-      }
-
       document.getElementById('loadingOverlay').style.display = 'flex';
 
       try {
-        const response = await fetch('/api/order/place', {
+        const response = await fetch('/api/order/complete', {
           method: 'POST',
           body: formData
         });
@@ -1811,14 +1745,11 @@
         const result = await response.json();
         
         if (result.success) {
-          // Clear cart
-          localStorage.removeItem('lumen_cart');
-          
           if (window.Telegram && Telegram.WebApp) {
-            Telegram.WebApp.showAlert(translations[currentLang].orderPlaced);
+            Telegram.WebApp.showAlert(translations[currentLang].orderCompleted);
             setTimeout(() => Telegram.WebApp.close(), 2000);
           } else {
-            alert(translations[currentLang].orderPlaced);
+            alert(translations[currentLang].orderCompleted);
           }
         } else {
           throw new Error(result.message || 'Error');
@@ -1837,11 +1768,17 @@
 
     // Initialize app
     async function init() {
-      console.log('🚀 Initializing Lumen Order Form...');
+      console.log('🚀 Initializing ZHAD Order Form...');
       
       initTelegramWebApp();
       setLanguage('kz');
-      loadCartData();
+      
+      // Check if user has perfume selection
+      const hasSelection = await checkPerfumeSelection();
+      if (!hasSelection) {
+        return; // Stop initialization if no selection
+      }
+      
       initMap();
       
       document.getElementById('clientForm').addEventListener('submit', submitClientForm);
@@ -1849,7 +1786,7 @@
       updateBottomSheetHeight();
       window.addEventListener('resize', updateBottomSheetHeight);
       
-      console.log('✅ Lumen Order Form ready!');
+      console.log('✅ ZHAD Order Form ready!');
     }
 
     // Cleanup

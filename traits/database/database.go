@@ -14,8 +14,9 @@ func CreateTables(db *sql.DB) error {
 	}{
 		{"just", createJustTable},
 		{"parfumes", createParfumesTable},
-		{"clients", createClientsTable},
-		{"orders", createOrdersTable},
+		{"client", createClientTable},
+		{"loto", createLotoTable},
+		{"orders", CreateOrderTable}, // Updated to use new schema
 	}
 
 	for _, table := range tables {
@@ -67,50 +68,48 @@ func createParfumesTable(db *sql.DB) error {
 	return err
 }
 
-// createClientsTable creates the clients table
-func createClientsTable(db *sql.DB) error {
+func createClientTable(db *sql.DB) error {
 	const stmt = `
-	CREATE TABLE IF NOT EXISTS clients (
+	CREATE TABLE IF NOT EXISTS client (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		telegram_id BIGINT NOT NULL UNIQUE,
-		fio VARCHAR(255) NOT NULL,
-		contact VARCHAR(100) NOT NULL,
-		address TEXT NOT NULL,
-		latitude VARCHAR(50),
-		longitude VARCHAR(50),
+		id_user BIGINT NOT NULL UNIQUE,
+		userName VARCHAR(255) NOT NULL,
+		fio TEXT NULL,
+		contact VARCHAR(50) NOT NULL,
+		address TEXT NULL,
+		dateRegister VARCHAR(50) NULL,
+		dataPay VARCHAR(50) NOT NULL,
+		checks BOOLEAN DEFAULT FALSE,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);
-	
-	CREATE INDEX IF NOT EXISTS idx_clients_telegram_id ON clients(telegram_id);
-	CREATE INDEX IF NOT EXISTS idx_clients_created_at ON clients(created_at);
 	`
 	_, err := db.Exec(stmt)
 	return err
 }
 
-// createOrdersTable creates the orders table
-func createOrdersTable(db *sql.DB) error {
+// CreateOrderTable creates the orders table with the new schema
+func CreateOrderTable(db *sql.DB) error {
 	const stmt = `
 	CREATE TABLE IF NOT EXISTS orders (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		telegram_id BIGINT NOT NULL,
-		client_id INTEGER NOT NULL,
-		cart_data TEXT NOT NULL,
-		total_amount INTEGER NOT NULL,
-		status VARCHAR(50) NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled')),
-		payment_link TEXT,
+		id_user BIGINT NOT NULL,
+		userName VARCHAR(255) NOT NULL,
+		quantity INT,
+		parfumes TEXT NULL,
+		fio TEXT NULL,
+		contact VARCHAR(50) NOT NULL,
+		address TEXT NULL,
+		dateRegister VARCHAR(50) NULL,
+		dataPay VARCHAR(50) NOT NULL,
+		checks BOOLEAN DEFAULT FALSE,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-		FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
-		FOREIGN KEY (telegram_id) REFERENCES clients(telegram_id)
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 	);
 	
-	CREATE INDEX IF NOT EXISTS idx_orders_telegram_id ON orders(telegram_id);
-	CREATE INDEX IF NOT EXISTS idx_orders_client_id ON orders(client_id);
-	CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+	CREATE INDEX IF NOT EXISTS idx_orders_id_user ON orders(id_user);
+	CREATE INDEX IF NOT EXISTS idx_orders_checks ON orders(checks);
 	CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
-	CREATE INDEX IF NOT EXISTS idx_orders_total_amount ON orders(total_amount);
 	`
 	_, err := db.Exec(stmt)
 	return err
@@ -127,16 +126,18 @@ func CreateViews(db *sql.DB) error {
 			`CREATE VIEW IF NOT EXISTS order_summary_view AS
 			SELECT 
 				o.id,
-				o.telegram_id,
-				c.fio as client_name,
-				c.contact as client_contact,
-				c.address as delivery_address,
-				o.total_amount,
-				o.status,
+				o.id_user,
+				o.userName,
+				o.fio,
+				o.contact,
+				o.address,
+				o.quantity,
+				o.parfumes,
+				o.dataPay,
+				o.checks,
 				o.created_at as order_date,
 				o.updated_at
 			FROM orders o
-			JOIN clients c ON o.client_id = c.id
 			ORDER BY o.created_at DESC`,
 		},
 		{
@@ -145,10 +146,9 @@ func CreateViews(db *sql.DB) error {
 			SELECT 
 				DATE(created_at) as order_date,
 				COUNT(*) as total_orders,
-				SUM(total_amount) as total_revenue,
-				COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_orders,
-				COUNT(CASE WHEN status = 'paid' THEN 1 END) as paid_orders,
-				COUNT(CASE WHEN status = 'delivered' THEN 1 END) as delivered_orders
+				SUM(quantity) as total_quantity,
+				COUNT(CASE WHEN checks = 1 THEN 1 END) as checked_orders,
+				COUNT(CASE WHEN checks = 0 THEN 1 END) as unchecked_orders
 			FROM orders
 			GROUP BY DATE(created_at)
 			ORDER BY order_date DESC`,
@@ -241,6 +241,30 @@ func SeedData(db *sql.DB) error {
 	return nil
 }
 
+// Update createLotoTable to include checks column
+func createLotoTable(db *sql.DB) error {
+	const stmt = `
+	CREATE TABLE IF NOT EXISTS loto (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		id_user BIGINT NOT NULL,
+		id_loto INT NOT NULL,
+		qr TEXT NULL,
+		who_paid VARCHAR(255) DEFAULT '',
+		receipt TEXT NULL,
+		fio TEXT NULL,
+		contact VARCHAR(50),
+		address TEXT NULL,
+		dataPay VARCHAR(50) NOT NULL,
+		checks BOOLEAN DEFAULT FALSE,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		UNIQUE(id_user, id_loto)
+	);
+	`
+	_, err := db.Exec(stmt)
+	return err
+}
+
 // MigrateDatabase performs any necessary migrations
 func MigrateDatabase(db *sql.DB) error {
 	log.Println("Running database migrations...")
@@ -282,10 +306,10 @@ func CleanupOldData(db *sql.DB, daysOld int) error {
 
 	log.Printf("Cleaning up data older than %d days...", daysOld)
 
-	// Clean up old pending orders (older than specified days)
+	// Clean up old unchecked orders (older than specified days)
 	result, err := db.Exec(`
 		DELETE FROM orders 
-		WHERE status = 'pending' 
+		WHERE checks = 0 
 		AND created_at < datetime('now', '-' || ? || ' days')
 	`, daysOld)
 
@@ -294,7 +318,7 @@ func CleanupOldData(db *sql.DB, daysOld int) error {
 	}
 
 	affected, _ := result.RowsAffected()
-	log.Printf("Cleaned up %d old pending orders", affected)
+	log.Printf("Cleaned up %d old unchecked orders", affected)
 
 	return nil
 }

@@ -21,16 +21,16 @@
       --lumen-gray-300: #8a8a8a;
       --lumen-white: #ffffff;
 
-      --lumen-gold: #d4af37; /* subtler, more premium than bright gold */
+      --lumen-gold: #d4af37;
       --lumen-gold-light: #e6c766;
       --lumen-gold-dark: #a78728;
       --lumen-gold-glow: rgba(212, 175, 55, 0.28);
 
-      /* Accents (needed by logic references) */
-      --uber-green: #22c55e; /* used for add-to-cart instant feedback */
-      --uber-gray-400: #6b6b6b; /* used in custom scrollbar */
+      --uber-green: #22c55e;
+      --uber-red: #ef4444;
+      --uber-orange: #f97316;
+      --uber-gray-400: #6b6b6b;
 
-      /* Theme tokens */
       --bg-primary: var(--lumen-black);
       --bg-secondary: var(--lumen-gray-900);
       --bg-elevated: var(--lumen-gray-850);
@@ -48,7 +48,6 @@
       --shadow-lg: 0 10px 30px rgba(0,0,0,0.5);
       --shadow-glow: 0 0 20px var(--lumen-gold-glow);
 
-      /* Telegram viewport height fallback */
       --tg-viewport-height: 100vh;
     }
 
@@ -66,23 +65,16 @@
       color: var(--text-primary);
     }
 
-    /*
-      ✅ Requested adaptive full-screen for Telegram Mini App
-      Uses Telegram-provided CSS variables. Falls back gracefully on web.
-    */
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'Helvetica Neue', Arial, sans-serif;
-      /* Use *stable* height to avoid iOS URL bar jumps inside Telegram */
       height: var(--tg-viewport-stable-height, 100vh);
       min-height: var(--tg-viewport-stable-height, 100vh);
-      /* Respect safe areas (status bar, dynamic island, etc.) */
       padding-top: calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px) + 15px);
       padding-bottom: calc(var(--tg-safe-area-inset-bottom, 0px) + 12px);
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
     }
 
-    /* App Container — frameless (edge-to-edge), Uber-like minimal chrome */
     .app-container {
       height: 100%;
       display: flex;
@@ -91,7 +83,41 @@
       background: linear-gradient(180deg, var(--bg-primary), var(--bg-secondary));
     }
 
-    /* Header — flat, bold typography, no heavy borders, subtle divider only */
+    /* Quantity Notice */
+    .quantity-notice {
+      background: linear-gradient(135deg, var(--lumen-gold), var(--lumen-gold-light));
+      color: var(--lumen-black);
+      padding: 12px 16px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      margin: 16px;
+      box-shadow: var(--shadow-glow);
+    }
+
+    /* Warning Alert */
+    .warning-alert {
+      background: linear-gradient(135deg, var(--uber-orange), #ea580c);
+      color: white;
+      padding: 16px;
+      text-align: center;
+      font-weight: 600;
+      margin: 16px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(249, 115, 22, 0.3);
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: all 0.3s ease;
+    }
+
+    .warning-alert.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Header */
     .header {
       background: linear-gradient(180deg, rgba(0,0,0,0.7), rgba(0,0,0,0.4));
       padding: 10px 16px 12px;
@@ -117,7 +143,7 @@
 
     .header-right { display: flex; align-items: center; gap: 10px; }
 
-    /* Language Switch — pill with subtle outline */
+    /* Language Switch */
     .lang-switch {
       background: rgba(255,255,255,0.04);
       border-radius: 999px;
@@ -138,8 +164,8 @@
     }
     .lang-btn.active { background: var(--text-primary); color: var(--lumen-black); }
 
-    /* Cart Button — monochrome with subtle gold dot when items present */
-    .cart-btn {
+    /* Selection Counter */
+    .selection-counter {
       position: relative;
       background: #121212;
       color: var(--text-primary);
@@ -150,8 +176,8 @@
       cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
       transition: transform .15s ease, background .2s ease;
     }
-    .cart-btn:active { transform: scale(0.97); }
-    .cart-badge {
+    .selection-counter:active { transform: scale(0.97); }
+    .selection-badge {
       position: absolute; top: -6px; right: -6px;
       background: var(--accent);
       color: #0a0a0a;
@@ -159,6 +185,27 @@
       border-radius: 999px; width: 22px; height: 22px;
       font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; min-width: 22px;
       box-shadow: var(--shadow-glow);
+    }
+
+    /* Limit Status Bar */
+    .limit-status {
+      background: rgba(255,255,255,0.04);
+      padding: 8px 16px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .limit-status.warning {
+      background: rgba(249, 115, 22, 0.1);
+      color: var(--uber-orange);
+    }
+
+    .limit-status.danger {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--uber-red);
     }
 
     /* Search */
@@ -174,7 +221,7 @@
     .search-input::placeholder { color: var(--text-muted); }
     .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); opacity: .9; }
 
-    /* Filter Pills — flat, monochrome */
+    /* Filter Pills */
     .filter-container {
       padding: 2px 16px 12px; display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch;
     }
@@ -193,9 +240,14 @@
       display: flex; padding: 14px; border-bottom: 1px solid rgba(255,255,255,0.06);
       cursor: pointer; transition: background .25s, transform .2s ease;
       gap: 12px; background: transparent; margin: 0; border-radius: 0;
+      position: relative;
     }
     .product-item:hover { background: rgba(255,255,255,0.02); }
     .product-item:active { transform: scale(0.998); }
+    .product-item.disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
 
     .product-image { width: 84px; height: 84px; border-radius: 12px; background: #131415; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.08); overflow: hidden; display: flex; align-items: center; justify-content: center; }
     .product-image img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; display: none; }
@@ -210,64 +262,87 @@
     .product-price { font-size: 18px; font-weight: 900; color: var(--text-primary); }
     .product-price-unit { font-size: 12px; font-weight: 500; color: var(--text-muted); }
 
-    .add-btn {
-      background: var(--text-primary); color: #0a0a0a; border: none; padding: 9px 14px; border-radius: 10px;
-      font-size: 13px; font-weight: 800; cursor: pointer; transition: transform .14s ease, box-shadow .2s ease, background .2s; display: flex; align-items: center; gap: 6px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+    /* Quantity Controls */
+    .quantity-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.05);
+      padding: 6px;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,0.08);
     }
-    .add-btn:hover { transform: translateY(-1px); }
-    .add-btn:active { transform: translateY(0); }
-    .product-cart-indicator { position: absolute; top: -8px; right: -8px; background: var(--accent); color: #0a0a0a; border: 2px solid #0a0a0a; border-radius: 999px; width: 24px; height: 24px; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; min-width: 24px; z-index: 5; box-shadow: var(--shadow-glow); }
 
-    /* Modal — glassy, frameless */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.66); z-index: 100; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(8px); }
-    .modal { background: rgba(20,20,22,0.88); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; width: 100%; max-width: 420px; max-height: 85vh; overflow: hidden; animation: modalSlideUp .28s ease; box-shadow: var(--shadow-lg); position: relative; }
-    @keyframes modalSlideUp { from { transform: translateY(12px); opacity: .6;} to { transform: translateY(0); opacity: 1; } }
-    .modal-header { position: relative; padding: 0; display: flex; justify-content: flex-end; }
-    .modal-close { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; background: #121214; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--text-primary); transition: background .2s; }
-    .modal-close:hover { background: #18181b; }
-    .modal-content { padding: 18px; max-height: calc(85vh - 44px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
-    .modal-image { width: 100%; height: 250px; border-radius: 14px; background: #121214; margin-bottom: 14px; border: 1px solid rgba(255,255,255,0.08); overflow: hidden; display: flex; align-items: center; justify-content: center; }
-    .modal-image img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; display: none; }
-    .modal-title { font-size: 20px; font-weight: 900; color: var(--text-primary); margin-bottom: 6px; line-height: 1.28; }
-    .modal-sex { font-size: 12px; color: #0a0a0a; background: var(--text-primary); padding: 4px 10px; border-radius: 999px; display: inline-block; margin-bottom: 12px; font-weight: 900; }
-    .modal-description { font-size: 15px; color: var(--text-muted); line-height: 1.55; margin-bottom: 18px; }
-    .modal-price { font-size: 22px; font-weight: 900; color: var(--text-primary); margin-bottom: 14px; }
-    .modal-add-btn { background: var(--text-primary); color: #0a0a0a; border: none; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 900; cursor: pointer; width: 100%; transition: transform .14s ease; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
-    .modal-add-btn:active { transform: scale(0.98); }
+    .quantity-btn {
+      width: 28px;
+      height: 28px;
+      background: var(--text-primary);
+      color: #0a0a0a;
+      border: none;
+      border-radius: 50%;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-    /* Cart Panel — bottom sheet on mobile, side panel on desktop */
-    .cart-panel { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(20,20,22,0.98); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px 16px 0 0; box-shadow: var(--shadow-lg); z-index: 50; transform: translateY(100%); transition: transform .28s cubic-bezier(.4,0,.2,1); max-height: 60vh; display: flex; flex-direction: column; backdrop-filter: blur(8px); }
-    .cart-panel.show { transform: translateY(0); }
-    .cart-handle { width: 40px; height: 4px; background: rgba(255,255,255,0.24); border-radius: 2px; margin: 8px auto; }
-    .cart-header { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; }
-    .cart-title { font-size: 18px; font-weight: 900; }
-    .cart-subtitle { font-size: 13px; color: var(--text-muted); }
-    .cart-close { width: 36px; height: 36px; background: #121214; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; color: var(--text-primary); transition: background .2s; }
-    .cart-close:hover { background: #18181b; }
+    .quantity-btn:hover:not(:disabled) {
+      transform: scale(1.05);
+    }
 
-    .cart-items { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 16px; }
-    .cart-item { display: flex; align-items: center; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.06); gap: 12px; }
-    .cart-item:last-child { border-bottom: none; }
-    .cart-item-image { width: 52px; height: 52px; border-radius: 10px; background: #121214; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.08); overflow: hidden; display: flex; align-items: center; justify-content: center; }
-    .cart-item-image img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
-    .cart-item-info { flex: 1; min-width: 0; }
-    .cart-item-name { font-size: 14px; font-weight: 800; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .cart-item-price { font-size: 14px; color: var(--text-primary); }
-    .cart-item-controls { display: flex; align-items: center; gap: 12px; }
-    .quantity-controls { display: flex; align-items: center; gap: 8px; }
-    .quantity-btn { width: 30px; height: 30px; background: #121214; border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800; transition: transform .1s ease; color: var(--text-primary); }
-    .quantity-btn:active { transform: scale(0.95); }
-    .quantity-value { font-size: 14px; font-weight: 800; min-width: 22px; text-align: center; color: var(--text-primary); }
+    .quantity-btn:active:not(:disabled) {
+      transform: scale(0.95);
+    }
 
-    .cart-footer { padding: 14px 16px calc(14px + var(--tg-safe-area-inset-bottom, 0px)); border-top: 1px solid rgba(255,255,255,0.08); background: rgba(16,16,18,0.98); backdrop-filter: blur(6px); }
-    .cart-total { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .cart-total-label { font-size: 14px; color: var(--text-muted); }
-    .cart-total-value { font-size: 20px; font-weight: 900; color: var(--text-primary); }
-    .order-btn { background: var(--text-primary); color: #0a0a0a; border: none; padding: 14px; border-radius: 12px; font-size: 15px; font-weight: 900; cursor: pointer; width: 100%; transition: transform .12s ease; box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
-    .order-btn:active { transform: scale(0.98); }
+    .quantity-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      transform: none;
+      background: var(--lumen-gray-600);
+    }
 
-    /* Loading & Empty */
+    .quantity-value {
+      font-size: 14px;
+      font-weight: 800;
+      min-width: 20px;
+      text-align: center;
+      color: var(--text-primary);
+    }
+
+    /* Continue Button */
+    .continue-btn {
+      position: fixed;
+      bottom: calc(16px + var(--tg-safe-area-inset-bottom, 0px));
+      left: 16px;
+      right: 16px;
+      background: linear-gradient(135deg, var(--uber-green), #16a085);
+      color: white;
+      border: none;
+      padding: 16px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 900;
+      cursor: pointer;
+      z-index: 40;
+      box-shadow: 0 14px 36px rgba(34, 197, 94, 0.4);
+      transition: transform .28s ease, opacity .28s ease;
+      transform: translateY(120px);
+      opacity: 0;
+    }
+
+    .continue-btn.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .continue-btn:active {
+      transform: translateY(0) scale(0.98);
+    }
+
+    /* Loading & Empty States */
     .loading { display: flex; align-items: center; justify-content: center; padding: 40px; color: var(--text-secondary); }
     .loading-spinner { width: 28px; height: 28px; border: 3px solid rgba(255,255,255,0.12); border-top-color: var(--text-primary); border-radius: 50%; animation: spin .8s linear infinite; margin-right: 12px; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -276,72 +351,27 @@
     .empty-title { font-size: 18px; font-weight: 900; margin-bottom: 6px; }
     .empty-subtitle { font-size: 14px; color: var(--text-muted); }
 
-    /* Quick Order Button — floating CTA */
-    .quick-order-btn { position: fixed; bottom: calc(16px + var(--tg-safe-area-inset-bottom, 0px)); left: 16px; right: 16px; background: var(--text-primary); color: #0a0a0a; border: none; padding: 14px; border-radius: 14px; font-size: 15px; font-weight: 900; cursor: pointer; z-index: 40; box-shadow: 0 14px 36px rgba(0,0,0,0.5); transition: transform .28s ease, opacity .28s ease; transform: translateY(120px); opacity: 0; }
-    .quick-order-btn.show { transform: translateY(0); opacity: 1; }
-    .quick-order-btn:active { transform: translateY(0) scale(0.98); }
+    /* No Quantity Alert */
+    .no-quantity-alert {
+      background: linear-gradient(135deg, var(--uber-red), #c53030);
+      color: white;
+      padding: 16px;
+      text-align: center;
+      font-weight: 600;
+      margin: 16px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(239, 68, 68, 0.3);
+    }
 
     /* Utilities */
     .hidden { display: none !important; }
 
-    /* Responsive tweaks */
+    /* Mobile Optimizations */
     @media (max-width: 480px) {
       .header { padding: 10px 16px 10px; }
       .header-title { font-size: 20px; }
       .product-image { width: 76px; height: 76px; }
-      .modal { width: 95%; max-width: 95%; max-height: 90vh; border-radius: 18px; }
-      .modal-content { padding: 16px; max-height: calc(90vh - 60px); }
-      .modal-image { height: 260px; }
-      .cart-panel { max-height: 75vh; }
-    }
-
-    @media (min-width: 768px) and (max-width: 1023px) {
-      .app-container { max-width: 100%; margin: 0 auto; }
-      .header { padding: 16px 24px; }
-      .search-container { padding: 16px 24px 12px; }
-      .filter-container { padding: 0 24px 12px; }
-      .product-list { padding: 0 8px; }
-      .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 10px 8px 16px; }
-      .product-item { flex-direction: column; border-bottom: none; border-radius: 14px; padding: 12px; background: #111213; border: 1px solid rgba(255,255,255,0.06); }
-      .product-image { width: 100%; height: 140px; margin-bottom: 10px; }
-
-      /* Tablet cart as centered sheet */
-      .cart-panel { top: 50%; left: 50%; right: auto; bottom: auto; width: 92%; max-width: 520px; max-height: 70vh; border-radius: 16px; transform: translate(-50%, 40px); opacity: 0; }
-      .cart-panel.show { transform: translate(-50%, -50%); opacity: 1; }
-      .modal { max-width: 520px; }
-    }
-
-    @media (min-width: 1024px) {
-      .app-container { max-width: 1200px; margin: 0 auto; min-height: 100vh; }
-      .header { padding: 18px 28px; }
-      .search-container { padding: 18px 28px 12px; }
-      .filter-container { padding: 0 28px 12px; justify-content: flex-start; }
-      .product-list { padding: 0 12px; }
-      .product-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 10px 12px 18px; }
-      .product-item { flex-direction: column; border-bottom: none; border-radius: 16px; padding: 14px; background: #111213; border: 1px solid rgba(255,255,255,0.06); transition: transform .2s ease, box-shadow .2s ease; }
-      .product-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-      .product-image { width: 100%; height: 160px; margin-bottom: 12px; }
-      .product-actions { flex-direction: column; gap: 10px; align-items: stretch; }
-      .add-btn { justify-content: center; padding: 11px 16px; }
-
-      /* Side cart */
-      .cart-panel { top: 74px; right: -420px; left: auto; bottom: auto; width: 400px; max-width: 400px; max-height: calc(100vh - 110px); border-radius: 16px; transform: none; transition: right .28s ease; }
-      .cart-panel.show { right: 20px; }
-      .quick-order-btn { display: none; }
-      .modal { max-width: 600px; max-height: 70vh; }
-      .modal-image { height: 300px; }
-      .product-count { text-align: left; padding: 12px; font-size: 14px; grid-column: 1 / -1; }
-    }
-
-    @media (min-width: 1400px) {
-      .app-container { max-width: 1400px; }
-      .product-grid { grid-template-columns: repeat(4, 1fr); gap: 18px; }
-      .cart-panel { width: 440px; max-width: 440px; }
-    }
-
-    /* High-DPI */
-    @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-      .product-image, .cart-item-image, .modal-image { image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges; }
+      .continue-btn { bottom: calc(12px + var(--tg-safe-area-inset-bottom, 0px)); }
     }
 
     /* Scrollbar */
@@ -367,11 +397,31 @@
           <button class="lang-btn" id="langRu" onclick="setLanguage('ru')">РУС</button>
           <button class="lang-btn active" id="langKz" onclick="setLanguage('kz')">ҚАЗ</button>
         </div>
-        <button class="cart-btn" onclick="toggleCart()">
+        <button class="selection-counter">
           🛒
-          <span class="cart-badge hidden" id="cartBadge">0</span>
+          <span class="selection-badge hidden" id="selectionBadge">0</span>
         </button>
       </div>
+    </div>
+
+    <!-- Limit Status -->
+    <div class="limit-status" id="limitStatus">
+      Таңдалды: <span id="selectedCount">0</span> / <span id="totalLimit">0</span>
+    </div>
+
+    <!-- Warning Alert -->
+    <div class="warning-alert hidden" id="warningAlert">
+      ⚠️ Лимит асып кетті!
+    </div>
+
+    <!-- Quantity Notice -->
+    <div class="quantity-notice hidden" id="quantityNotice">
+      Сізде 0 парфюм таңдауға мүмкіндік бар
+    </div>
+
+    <!-- No Quantity Alert -->
+    <div class="no-quantity-alert hidden" id="noQuantityAlert">
+      😔 Сізде таңдауға болатын парфюм жоқ. Алдымен төлем жасаңыз.
     </div>
 
     <!-- Search -->
@@ -398,378 +448,562 @@
       </div>
     </div>
 
-    <!-- Quick Order Button -->
-    <button class="quick-order-btn" id="quickOrderBtn" onclick="proceedToOrder()">
-      <span id="orderBtnText">Тапсырыс беру</span> • <span id="orderBtnTotal">0 ₸</span>
+    <!-- Continue Button -->
+    <button class="continue-btn" id="continueBtn" onclick="proceedToOrder()">
+      ➡️ Жалғастыру
     </button>
-
-    <!-- Product Detail Modal -->
-    <div class="modal-overlay" id="modalOverlay" onclick="closeModal()">
-      <div class="modal" onclick="event.stopPropagation()">
-        <div class="modal-header">
-          <button class="modal-close" onclick="closeModal()">✕</button>
-        </div>
-        <div class="modal-content" id="modalContent"><!-- Dynamic content --></div>
-      </div>
-    </div>
-
-    <!-- Cart Panel -->
-    <div class="cart-panel" id="cartPanel">
-      <div class="cart-handle"></div>
-      <div class="cart-header">
-        <div class="cart-header-left">
-          <h2 class="cart-title" id="cartTitle">Себет</h2>
-          <p class="cart-subtitle" id="cartSubtitle">Таңдалған парфюмдер</p>
-        </div>
-        <button class="cart-close" onclick="toggleCart()">✕</button>
-      </div>
-      <div class="cart-items" id="cartItems"><!-- Dynamic cart items --></div>
-      <div class="cart-footer">
-        <div class="cart-total">
-          <span class="cart-total-label" id="totalLabel">Барлығы:</span>
-          <span class="cart-total-value" id="totalValue">0 ₸</span>
-        </div>
-        <button class="order-btn" onclick="proceedToOrder()" id="cartOrderBtn">Тапсырыс беру</button>
-      </div>
-    </div>
   </div>
 
   <script>
-    // Global Variables (logic unchanged)
+    // Global Variables
     let currentLang = 'kz';
     let allPerfumes = [];
     let filteredPerfumes = [];
-    let cart = [];
+    let selectedPerfumes = {}; // {perfumeId: quantity}
+    let availableQuantity = 0;
     let telegramId = null;
-    let isCartOpen = false;
     let currentFilter = 'all';
 
-    // Translations (unchanged)
+    // Translations
     const translations = {
-      ru: { title:'ZHAD PARFUME', subtitle:'Каталог парфюмерии', searchPlaceholder:'Поиск парфюма...', loadingText:'Загрузка парфюмов...', filterAll:'Все', filterMale:'Для мужчин', filterFemale:'Для женщин', filterUnisex:'Унисекс', addToCart:'В корзину', cartTitle:'Корзина', cartSubtitle:'Выбранные парфюмы', totalLabel:'Итого:', orderBtnText:'Оформить заказ', emptyCartTitle:'Корзина пуста', emptyCartSubtitle:'Добавьте парфюмы для заказа', emptySearchTitle:'Ничего не найдено', emptySearchSubtitle:'Попробуйте изменить поисковый запрос', items:'товаров', male:'Мужской', female:'Женский', unisex:'Унисекс', tenge:'₸' },
-      kz: { title:'ZHAD PARFUME', subtitle:'Парфюм каталогы', searchPlaceholder:'Парфюм іздеу...', loadingText:'Парфюмдер жүктелуде...', filterAll:'Барлығы', filterMale:'Ерлерге', filterFemale:'Әйелдерге', filterUnisex:'Барлығына', addToCart:'Себетке', cartTitle:'Себет', cartSubtitle:'Таңдалған парфюмдер', totalLabel:'Барлығы:', orderBtnText:'Тапсырыс беру', emptyCartTitle:'Себет бос', emptyCartSubtitle:'Тапсырыс беру үшін парфюм қосыңыз', emptySearchTitle:'Ештеңе табылмады', emptySearchSubtitle:'Іздеу сөзін өзгертіп көріңіз', items:'тауар', male:'Ерлер', female:'Әйелдер', unisex:'Барлығына', tenge:'₸' }
+      ru: {
+        title: 'ZHAD PARFUME',
+        subtitle: 'Каталог парфюмерии',
+        searchPlaceholder: 'Поиск парфюма...',
+        loadingText: 'Загрузка парфюмов...',
+        filterAll: 'Все',
+        filterMale: 'Для мужчин',
+        filterFemale: 'Для женщин',
+        filterUnisex: 'Унисекс',
+        quantityNotice: 'У вас есть возможность выбрать {count} парфюм(ов)',
+        noQuantityAlert: '😔 У вас нет доступных парфюмов для выбора. Сначала оплатите заказ.',
+        continueBtn: '➡️ Продолжить',
+        items: 'товаров',
+        male: 'Мужской',
+        female: 'Женский',
+        unisex: 'Унисекс',
+        selectPerfumes: 'Выберите парфюмы',
+        maxQuantityReached: 'Достигнуто максимальное количество парфюмов! Вы можете выбрать только {limit}.',
+        limitExceeded: '⚠️ Превышен лимит! Вы можете выбрать только {limit} парфюм(ов).',
+        limitStatus: 'Выбрано: {selected} / {limit}',
+        emptySearchTitle: 'Ничего не найдено',
+        emptySearchSubtitle: 'Попробуйте изменить поисковый запрос',
+        warningAlert: '⚠️ Лимит превышен!'
+      },
+      kz: {
+        title: 'ZHAD PARFUME',
+        subtitle: 'Парфюм каталогы',
+        searchPlaceholder: 'Парфюм іздеу...',
+        loadingText: 'Парфюмдер жүктелуде...',
+        filterAll: 'Барлығы',
+        filterMale: 'Ерлерге',
+        filterFemale: 'Әйелдерге',
+        filterUnisex: 'Барлығына',
+        quantityNotice: 'Сізде {count} парфюм таңдауға мүмкіндік бар',
+        noQuantityAlert: '😔 Сізде таңдауға болатын парфюм жоқ. Алдымен төлем жасаңыз.',
+        continueBtn: '➡️ Жалғастыру',
+        items: 'тауар',
+        male: 'Ерлер',
+        female: 'Әйелдер',
+        unisex: 'Барлығына',
+        selectPerfumes: 'Парфюм таңдаңыз',
+        maxQuantityReached: 'Максималды сан жетті! Сіз тек {limit} парфюм таңдай аласыз.',
+        limitExceeded: '⚠️ Лимит асып кетті! Сіз тек {limit} парфюм таңдай аласыз.',
+        limitStatus: 'Таңдалды: {selected} / {limit}',
+        emptySearchTitle: 'Ештеңе табылмады',
+        emptySearchSubtitle: 'Іздеу сөзін өзгертіп көріңіз',
+        warningAlert: '⚠️ Лимит асып кетті!'
+      }
     };
 
-    // Telegram WebApp init (logic unchanged; expanded to use safe viewport vars)
+    // Initialize Telegram WebApp
     function initTelegramWebApp() {
-      if (!window.Telegram || !Telegram.WebApp) return false;
+      console.log('🚀 Initializing ZHAD Perfume Selection...');
+      
+      if (!window.Telegram || !Telegram.WebApp) {
+        console.warn('⚠️ Telegram WebApp not available');
+        return false;
+      }
+
       try {
         Telegram.WebApp.ready();
         Telegram.WebApp.expand();
+        
         if (Telegram.WebApp.initDataUnsafe?.user) {
           telegramId = Telegram.WebApp.initDataUnsafe.user.id;
+          console.log('📱 Telegram User ID:', telegramId);
         }
+
         try {
           Telegram.WebApp.setBackgroundColor('#0b0b0b');
           Telegram.WebApp.setHeaderColor('#000000');
         } catch (_) {}
+
         updateViewportHeight();
         Telegram.WebApp.onEvent('viewportChanged', updateViewportHeight);
+
         return true;
-      } catch (e) {
-        console.error('Telegram init error', e);
+      } catch (error) {
+        console.error('❌ Error initializing Telegram WebApp:', error);
         return false;
       }
     }
 
-    // Update viewport height CSS var (kept for compatibility)
+    // Update viewport height
     function updateViewportHeight() {
       let vh = window.innerHeight;
       if (window.Telegram && Telegram.WebApp) vh = Telegram.WebApp.viewportHeight || vh;
       document.documentElement.style.setProperty('--tg-viewport-height', `${vh}px`);
     }
 
-    // Load perfumes from API (unchanged)
+    // Load user's available quantity
+    async function loadAvailableQuantity() {
+      if (!telegramId) {
+        console.warn('No Telegram ID available');
+        showNoQuantityAlert();
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/user/available-quantity?telegram_id=${telegramId}`);
+        const data = await response.json();
+        
+        if (data.success) {
+          availableQuantity = data.available_quantity;
+          console.log('Available quantity:', availableQuantity);
+          
+          if (availableQuantity > 0) {
+            showQuantityNotice(availableQuantity);
+            updateLimitStatus();
+            await loadPerfumes();
+          } else {
+            showNoQuantityAlert();
+          }
+        } else {
+          showNoQuantityAlert();
+        }
+      } catch (error) {
+        console.error('Error loading available quantity:', error);
+        showNoQuantityAlert();
+      }
+    }
+
+    // Show quantity notice
+    function showQuantityNotice(quantity) {
+      const notice = document.getElementById('quantityNotice');
+      const text = translations[currentLang].quantityNotice.replace('{count}', quantity);
+      notice.textContent = text;
+      notice.classList.remove('hidden');
+    }
+
+    // Show no quantity alert
+    function showNoQuantityAlert() {
+      const alert = document.getElementById('noQuantityAlert');
+      alert.textContent = translations[currentLang].noQuantityAlert;
+      alert.classList.remove('hidden');
+      
+      // Hide other elements
+      document.querySelector('.search-container').style.display = 'none';
+      document.querySelector('.filter-container').style.display = 'none';
+      document.getElementById('limitStatus').style.display = 'none';
+      document.getElementById('productList').innerHTML = '';
+    }
+
+    // Update limit status
+    function updateLimitStatus() {
+      const statusDiv = document.getElementById('limitStatus');
+      const selectedCount = getTotalSelectedQuantity();
+      
+      const statusText = translations[currentLang].limitStatus
+        .replace('{selected}', selectedCount)
+        .replace('{limit}', availableQuantity);
+      
+      document.getElementById('selectedCount').textContent = selectedCount;
+      document.getElementById('totalLimit').textContent = availableQuantity;
+      
+      // Update status styling based on selection
+      statusDiv.className = 'limit-status';
+      if (selectedCount === availableQuantity) {
+        statusDiv.classList.add('warning');
+      } else if (selectedCount > availableQuantity) {
+        statusDiv.classList.add('danger');
+      }
+    }
+
+    // Show warning alert
+    function showWarningAlert(message) {
+      const alert = document.getElementById('warningAlert');
+      alert.textContent = message;
+      alert.classList.remove('hidden');
+      alert.classList.add('show');
+      
+      // Hide after 3 seconds
+      setTimeout(() => {
+        alert.classList.remove('show');
+        setTimeout(() => {
+          alert.classList.add('hidden');
+        }, 300);
+      }, 3000);
+    }
+
+    // Load perfumes from API
     async function loadPerfumes() {
       try {
         const response = await fetch('/api/parfumes');
         if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        
         allPerfumes = await response.json();
         filteredPerfumes = [...allPerfumes];
         renderPerfumes();
+        
       } catch (error) {
         console.error('Error loading perfumes:', error);
         showEmptyState('error', 'Қате орын алды', 'Парфюмдерді жүктеу мүмкін болмады');
       }
     }
 
-    function getCartQuantity(productId) {
-      const item = cart.find(item => item.id === productId);
-      return item ? item.quantity : 0;
-    }
-
-    // Render list/grid (unchanged logic)
+    // Render perfumes list
     function renderPerfumes() {
       const container = document.getElementById('productList');
-      if (filteredPerfumes.length === 0) { showEmptyState('search'); return; }
-      const isLargeScreen = window.innerWidth >= 768;
+      
+      if (filteredPerfumes.length === 0) {
+        showEmptyState('search');
+        return;
+      }
 
-      if (isLargeScreen) {
-        let html = `<div class="product-grid">`;
-        html += `<div class="product-count">${filteredPerfumes.length} ${translations[currentLang].items}</div>`;
-        filteredPerfumes.forEach(perfume => {
-          const photoUrl = perfume.PhotoPath ? `/photo/${perfume.PhotoPath}` : null;
-          const sexLabel = getSexLabel(perfume.Sex);
-          const cartQuantity = getCartQuantity(perfume.Id);
-          const imageHtml = photoUrl ? `<img src="${photoUrl}" alt="${escapeHtml(perfume.NameParfume)}" onload="this.style.display='block'" onerror="handleImageError(this)">` : '<div class="image-placeholder">🌸</div>';
-          html += `
-            <div class="product-item" onclick="showProductDetail('${perfume.Id}')">
-              <div class="product-image">${imageHtml}</div>
-              <div class="product-info">
-                <div class="product-name">${escapeHtml(perfume.NameParfume)}</div>
-                <span class="product-sex">${sexLabel}</span>
-                <div class="product-description">${escapeHtml(perfume.Description)}</div>
-                <div class="product-actions">
-                  <div class="product-price">${perfume.Price} <span class="product-price-unit">${translations[currentLang].tenge}</span></div>
-                  <button class="add-btn" onclick="event.stopPropagation(); addToCart('${perfume.Id}')">
-                    ➕ ${translations[currentLang].addToCart}
-                    ${cartQuantity > 0 ? `<span class="product-cart-indicator">${cartQuantity}</span>` : ''}
-                  </button>
+      let html = `<div class="product-count">${filteredPerfumes.length} ${translations[currentLang].items}</div>`;
+      
+      filteredPerfumes.forEach(perfume => {
+        const photoUrl = perfume.PhotoPath ? `/photo/${perfume.PhotoPath}` : null;
+        const sexLabel = getSexLabel(perfume.Sex);
+        const selectedQuantity = selectedPerfumes[perfume.Id] || 0;
+        const totalSelected = getTotalSelectedQuantity();
+        const canIncrease = totalSelected < availableQuantity;
+        const canDecrease = selectedQuantity > 0;
+        
+        const imageHtml = photoUrl ? 
+          `<img src="${photoUrl}" alt="${escapeHtml(perfume.NameParfume)}" onload="this.style.display='block'" onerror="handleImageError(this)">` : 
+          '<div class="image-placeholder">🌸</div>';
+        
+        html += `
+          <div class="product-item" data-perfume-id="${perfume.Id}">
+            <div class="product-image">${imageHtml}</div>
+            <div class="product-info">
+              <div class="product-name">${escapeHtml(perfume.NameParfume)}</div>
+              <span class="product-sex">${sexLabel}</span>
+              <div class="product-description">${escapeHtml(perfume.Description)}</div>
+              <div class="product-actions">
+                <div class="product-price">${perfume.Price} ₸</div>
+                <div class="quantity-controls">
+                  <button class="quantity-btn" onclick="changeQuantity('${perfume.Id}', -1)" ${!canDecrease ? 'disabled' : ''}>−</button>
+                  <span class="quantity-value">${selectedQuantity}</span>
+                  <button class="quantity-btn" onclick="changeQuantity('${perfume.Id}', 1)" ${!canIncrease ? 'disabled' : ''}>+</button>
                 </div>
               </div>
-            </div>`;
-        });
-        html += `</div>`;
-        container.innerHTML = html;
+            </div>
+          </div>
+        `;
+      });
+      
+      container.innerHTML = html;
+    }
+
+    // Change perfume quantity - FIXED LOGIC
+    function changeQuantity(perfumeId, change) {
+      const currentQuantity = selectedPerfumes[perfumeId] || 0;
+      const newQuantity = currentQuantity + change;
+      const currentTotalSelected = getTotalSelectedQuantity();
+      const newTotalSelected = currentTotalSelected + change;
+      
+      console.log(`Changing quantity for ${perfumeId}: ${currentQuantity} -> ${newQuantity}`);
+      console.log(`Total selection: ${currentTotalSelected} -> ${newTotalSelected} (limit: ${availableQuantity})`);
+      
+      // Validation checks
+      if (newQuantity < 0) {
+        console.log('Cannot go below 0');
+        return;
+      }
+      
+      // Check if trying to increase beyond limit
+      if (change > 0 && newTotalSelected > availableQuantity) {
+        console.log('Limit exceeded, showing warning');
+        const warningMessage = translations[currentLang].limitExceeded.replace('{limit}', availableQuantity);
+        showWarningAlert(warningMessage);
+        
+        // Also show Telegram alert
+        if (window.Telegram && Telegram.WebApp) {
+          const alertMessage = translations[currentLang].maxQuantityReached.replace('{limit}', availableQuantity);
+          Telegram.WebApp.showAlert(alertMessage);
+        }
+        return;
+      }
+      
+      // Update the quantity
+      if (newQuantity === 0) {
+        delete selectedPerfumes[perfumeId];
+        console.log(`Removed ${perfumeId} from selection`);
       } else {
-        let html = `<div class="product-count">${filteredPerfumes.length} ${translations[currentLang].items}</div>`;
-        filteredPerfumes.forEach(perfume => {
-          const photoUrl = perfume.PhotoPath ? `/photo/${perfume.PhotoPath}` : null;
-          const sexLabel = getSexLabel(perfume.Sex);
-          const cartQuantity = getCartQuantity(perfume.Id);
-          const imageHtml = photoUrl ? `<img src="${photoUrl}" alt="${escapeHtml(perfume.NameParfume)}" onload="this.style.display='block'" onerror="handleImageError(this)">` : '<div class="image-placeholder">🌸</div>';
-          html += `
-            <div class="product-item" onclick="showProductDetail('${perfume.Id}')">
-              <div class="product-image">${imageHtml}</div>
-              <div class="product-info">
-                <div class="product-name">${escapeHtml(perfume.NameParfume)}</div>
-                <span class="product-sex">${sexLabel}</span>
-                <div class="product-description">${escapeHtml(perfume.Description)}</div>
-                <div class="product-actions">
-                  <div class="product-price">${perfume.Price} <span class="product-price-unit">${translations[currentLang].tenge}</span></div>
-                  <button class="add-btn" onclick="event.stopPropagation(); addToCart('${perfume.Id}')">
-                    ➕ ${translations[currentLang].addToCart}
-                    ${cartQuantity > 0 ? `<span class="product-cart-indicator">${cartQuantity}</span>` : ''}
-                  </button>
-                </div>
-              </div>
-            </div>`;
-        });
-        container.innerHTML = html;
+        selectedPerfumes[perfumeId] = newQuantity;
+        console.log(`Set ${perfumeId} quantity to ${newQuantity}`);
+      }
+      
+      // Update UI
+      updateSelectionCounter();
+      updateLimitStatus();
+      renderPerfumes(); // Re-render to update button states
+    }
+
+    // Get total selected quantity
+    function getTotalSelectedQuantity() {
+      return Object.values(selectedPerfumes).reduce((sum, qty) => sum + qty, 0);
+    }
+
+    // Update selection counter
+    function updateSelectionCounter() {
+      const badge = document.getElementById('selectionBadge');
+      const continueBtn = document.getElementById('continueBtn');
+      const totalSelected = getTotalSelectedQuantity();
+      
+      console.log(`Updating selection counter: ${totalSelected} items selected`);
+      
+      if (totalSelected > 0) {
+        badge.textContent = totalSelected;
+        badge.classList.remove('hidden');
+        continueBtn.classList.add('show');
+      } else {
+        badge.classList.add('hidden');
+        continueBtn.classList.remove('show');
       }
     }
 
+    // Show empty state
     function showEmptyState(type, customTitle = null, customSubtitle = null) {
       const container = document.getElementById('productList');
       let icon, title, subtitle;
-      if (type === 'search') { icon = '🔍'; title = customTitle || translations[currentLang].emptySearchTitle; subtitle = customSubtitle || translations[currentLang].emptySearchSubtitle; }
-      else if (type === 'error') { icon = '⚠️'; title = customTitle || 'Қате орын алды'; subtitle = customSubtitle || 'Парфюмдерді жүктеу мүмкін болмады'; }
+      
+      if (type === 'search') {
+        icon = '🔍';
+        title = customTitle || translations[currentLang].emptySearchTitle;
+        subtitle = customSubtitle || translations[currentLang].emptySearchSubtitle;
+      } else if (type === 'error') {
+        icon = '⚠️';
+        title = customTitle || 'Қате орын алды';
+        subtitle = customSubtitle || 'Парфюмдерді жүктеу мүмкін болмады';
+      }
+      
       container.innerHTML = `
         <div class="empty-state">
           <div class="empty-icon">${icon}</div>
           <div class="empty-title">${title}</div>
           <div class="empty-subtitle">${subtitle}</div>
-        </div>`;
+        </div>
+      `;
     }
 
+    // Get sex label
     function getSexLabel(sex) {
-      const labels = { 'Male': translations[currentLang].male, 'Female': translations[currentLang].female, 'Unisex': translations[currentLang].unisex };
+      const labels = {
+        'Male': translations[currentLang].male,
+        'Female': translations[currentLang].female,
+        'Unisex': translations[currentLang].unisex
+      };
       return labels[sex] || sex;
     }
 
-    function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
-
-    function setFilter(filter) {
-      currentFilter = filter;
-      document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.remove('active'));
-      event.currentTarget.classList.add('active');
-      if (filter === 'all') filteredPerfumes = [...allPerfumes]; else filteredPerfumes = allPerfumes.filter(p => p.Sex === filter);
-      const searchTerm = document.getElementById('searchInput').value.trim();
-      if (searchTerm) { searchPerfumes(searchTerm); } else { renderPerfumes(); }
+    // Escape HTML
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
     }
 
+    // Handle image error
+    function handleImageError(img) {
+      const container = img.parentElement;
+      container.innerHTML = '<div class="image-placeholder">🌸</div>';
+    }
+
+    // Set filter
+    function setFilter(filter) {
+      currentFilter = filter;
+      
+      document.querySelectorAll('.filter-pill').forEach(btn => btn.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      
+      if (filter === 'all') {
+        filteredPerfumes = [...allPerfumes];
+      } else {
+        filteredPerfumes = allPerfumes.filter(p => p.Sex === filter);
+      }
+      
+      const searchTerm = document.getElementById('searchInput').value.trim();
+      if (searchTerm) {
+        searchPerfumes(searchTerm);
+      } else {
+        renderPerfumes();
+      }
+    }
+
+    // Search perfumes
     function searchPerfumes(query) {
       const searchTerm = query.toLowerCase();
       const baseList = currentFilter === 'all' ? allPerfumes : allPerfumes.filter(p => p.Sex === currentFilter);
-      filteredPerfumes = baseList.filter(perfume => (perfume.NameParfume || '').toLowerCase().includes(searchTerm) || (perfume.Description || '').toLowerCase().includes(searchTerm));
+      
+      filteredPerfumes = baseList.filter(perfume => 
+        (perfume.NameParfume || '').toLowerCase().includes(searchTerm) || 
+        (perfume.Description || '').toLowerCase().includes(searchTerm)
+      );
+      
       renderPerfumes();
     }
 
-    function showProductDetail(productId) {
-      const perfume = allPerfumes.find(p => p.Id === productId);
-      if (!perfume) return;
-      const photoUrl = perfume.PhotoPath ? `/photo/${perfume.PhotoPath}` : null;
-      const sexLabel = getSexLabel(perfume.Sex);
-      const modalContent = document.getElementById('modalContent');
-      const imageHtml = photoUrl ? `<img src="${photoUrl}" alt="${escapeHtml(perfume.NameParfume)}" onload="this.style.display='block'" onerror="handleImageError(this)">` : '<div class="image-placeholder">🌸</div>';
-      modalContent.innerHTML = `
-        <div class="modal-image">${imageHtml}</div>
-        <h2 class="modal-title">${escapeHtml(perfume.NameParfume)}</h2>
-        <span class="modal-sex">${sexLabel}</span>
-        <p class="modal-description">${escapeHtml(perfume.Description)}</p>
-        <div class="modal-price">${perfume.Price} ${translations[currentLang].tenge}</div>
-        <button class="modal-add-btn" onclick="addToCart('${perfume.Id}'); closeModal();">➕ ${translations[currentLang].addToCart}</button>`;
-      document.getElementById('modalOverlay').style.display = 'flex';
-    }
-
-    function handleImageError(img) { const container = img.parentElement; container.innerHTML = '<div class="image-placeholder">🌸</div>'; }
-    function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
-
-    function addToCart(productId) {
-      const perfume = allPerfumes.find(p => p.Id === productId);
-      if (!perfume) return;
-      const existingItem = cart.find(item => item.id === productId);
-      if (existingItem) existingItem.quantity += 1; else cart.push({ id: productId, name: perfume.NameParfume, price: perfume.Price, photo: perfume.PhotoPath, quantity: 1 });
-      updateCartUI();
-      const btn = event.currentTarget; const originalText = btn.innerHTML; btn.innerHTML = '✓ Қосылды'; btn.style.background = 'var(--uber-green)';
-      setTimeout(() => { btn.innerHTML = originalText; btn.style.background = ''; }, 900);
-    }
-
-    function updateCartUI() {
-      const cartBadge = document.getElementById('cartBadge');
-      const quickOrderBtn = document.getElementById('quickOrderBtn');
-      const totalItems = cart.reduce((s, i) => s + i.quantity, 0);
-      const totalPrice = cart.reduce((s, i) => s + (i.price * i.quantity), 0);
-      if (totalItems > 0) {
-        cartBadge.textContent = totalItems; cartBadge.classList.remove('hidden');
-        quickOrderBtn.classList.add('show');
-        document.getElementById('orderBtnTotal').textContent = `${totalPrice} ${translations[currentLang].tenge}`;
-      } else {
-        cartBadge.classList.add('hidden'); quickOrderBtn.classList.remove('show');
-      }
-      if (isCartOpen) renderCart();
-    }
-
-    function toggleCart() {
-      isCartOpen = !isCartOpen; const cartPanel = document.getElementById('cartPanel');
-      if (isCartOpen) {
-        cartPanel.classList.add('show'); renderCart();
-        if (window.innerWidth < 1024) {
-          const overlay = document.createElement('div'); overlay.id = 'cart-backdrop'; overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:40;'; overlay.onclick = () => toggleCart(); document.body.appendChild(overlay);
+    // Proceed to order (save selection and redirect)
+    async function proceedToOrder() {
+      const totalSelected = getTotalSelectedQuantity();
+      if (totalSelected === 0) {
+        if (window.Telegram && Telegram.WebApp) {
+          Telegram.WebApp.showAlert(translations[currentLang].selectPerfumes);
         }
-      } else {
-        cartPanel.classList.remove('show'); const overlay = document.getElementById('cart-backdrop'); if (overlay) overlay.remove();
-      }
-    }
-
-    function renderCart() {
-      const cartItems = document.getElementById('cartItems');
-      const totalValue = document.getElementById('totalValue');
-      const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      totalValue.textContent = `${totalPrice} ${translations[currentLang].tenge}`;
-      if (cart.length === 0) {
-        cartItems.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-icon">🛒</div>
-            <div class="empty-title">${translations[currentLang].emptyCartTitle}</div>
-            <div class="empty-subtitle">${translations[currentLang].emptyCartSubtitle}</div>
-          </div>`; return;
-      }
-      let html = '';
-      cart.forEach(item => {
-        const photoUrl = item.photo ? `/photo/${item.photo}` : null;
-        html += `
-          <div class="cart-item">
-            <div class="cart-item-image">${photoUrl ? `<img src="${photoUrl}" alt="${escapeHtml(item.name)}" onerror="this.parentElement.innerHTML='🌸'; this.parentElement.style.fontSize='24px';">` : '<span style="font-size:24px;">🌸</span>'}</div>
-            <div class="cart-item-info">
-              <div class="cart-item-name">${escapeHtml(item.name)}</div>
-              <div class="cart-item-price">${item.price} ${translations[currentLang].tenge}</div>
-            </div>
-            <div class="cart-item-controls">
-              <div class="quantity-controls">
-                <button class="quantity-btn" onclick="updateQuantity('${item.id}', -1)">−</button>
-                <span class="quantity-value">${item.quantity}</span>
-                <button class="quantity-btn" onclick="updateQuantity('${item.id}', 1)">+</button>
-              </div>
-            </div>
-          </div>`;
-      });
-      cartItems.innerHTML = html;
-    }
-
-    function updateQuantity(productId, change) {
-      const item = cart.find(i => i.id === productId); if (!item) return;
-      item.quantity += change; if (item.quantity <= 0) cart = cart.filter(ci => ci.id !== productId);
-      updateCartUI(); renderPerfumes();
-    }
-
-    function proceedToOrder() {
-      if (cart.length === 0) {
-        if (window.Telegram && Telegram.WebApp) Telegram.WebApp.showAlert(translations[currentLang].emptyCartTitle); else alert(translations[currentLang].emptyCartTitle);
         return;
       }
-      const orderData = { telegram_id: telegramId, cart: cart, total: cart.reduce((s, i) => s + (i.price * i.quantity), 0), timestamp: Date.now() };
-      try { sessionStorage.setItem('lumenOrder', JSON.stringify(orderData)); window.location.href = './order'; }
-      catch (e) { console.error('Order save error:', e); if (window.Telegram && Telegram.WebApp) Telegram.WebApp.showAlert('Қате орын алды. Қайталап көріңіз.'); else alert('Қате орын алды. Қайталап көріңіз.'); }
+
+      // Final validation before proceeding
+      if (totalSelected > availableQuantity) {
+        const warningMessage = translations[currentLang].limitExceeded.replace('{limit}', availableQuantity);
+        showWarningAlert(warningMessage);
+        if (window.Telegram && Telegram.WebApp) {
+          const alertMessage = translations[currentLang].maxQuantityReached.replace('{limit}', availableQuantity);
+          Telegram.WebApp.showAlert(alertMessage);
+        }
+        return;
+      }
+
+      // Prepare selection data
+      const selectionData = [];
+      for (const [perfumeId, quantity] of Object.entries(selectedPerfumes)) {
+        const perfume = allPerfumes.find(p => p.Id === perfumeId);
+        if (perfume) {
+          selectionData.push({
+            id: perfumeId,
+            name: perfume.NameParfume,
+            quantity: quantity
+          });
+        }
+      }
+
+      console.log('Proceeding to order with selection:', selectionData);
+
+      try {
+        // Save selection to backend
+        const response = await fetch('/api/user/save-perfume-selection', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            telegram_id: telegramId,
+            selected_perfumes: selectionData
+          }),
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+          console.log('Selection saved successfully');
+          // Redirect to order form
+          window.location.href = '/order';
+        } else {
+          throw new Error(result.message || 'Failed to save selection');
+        }
+      } catch (error) {
+        console.error('Error saving selection:', error);
+        if (window.Telegram && Telegram.WebApp) {
+          Telegram.WebApp.showAlert('Қате орын алды: ' + error.message);
+        }
+      }
     }
 
+    // Set language
     function setLanguage(lang) {
       currentLang = lang;
+      
       document.getElementById('langRu').classList.toggle('active', lang === 'ru');
       document.getElementById('langKz').classList.toggle('active', lang === 'kz');
+      
       document.getElementById('headerTitle').textContent = translations[lang].title;
       document.getElementById('headerSubtitle').textContent = translations[lang].subtitle;
       document.getElementById('searchInput').placeholder = translations[lang].searchPlaceholder;
       document.getElementById('loadingText').textContent = translations[lang].loadingText;
-      document.getElementById('orderBtnText').textContent = translations[lang].orderBtnText;
-      document.getElementById('cartTitle').textContent = translations[lang].cartTitle;
-      document.getElementById('cartSubtitle').textContent = translations[lang].cartSubtitle;
-      document.getElementById('totalLabel').textContent = translations[lang].totalLabel;
-      document.getElementById('cartOrderBtn').textContent = translations[lang].orderBtnText;
+      document.getElementById('continueBtn').innerHTML = translations[lang].continueBtn;
+      
       document.getElementById('filterAll').textContent = translations[lang].filterAll;
       document.getElementById('filterMale').textContent = translations[lang].filterMale;
       document.getElementById('filterFemale').textContent = translations[lang].filterFemale;
       document.getElementById('filterUnisex').textContent = translations[lang].filterUnisex;
-      if (filteredPerfumes.length > 0) renderPerfumes();
-      if (isCartOpen) renderCart();
-      updateCartUI();
+      
+      // Update quantity notice if visible
+      if (availableQuantity > 0) {
+        showQuantityNotice(availableQuantity);
+        updateLimitStatus();
+      }
+      
+      // Update no quantity alert if visible
+      if (!document.getElementById('noQuantityAlert').classList.contains('hidden')) {
+        document.getElementById('noQuantityAlert').textContent = translations[lang].noQuantityAlert;
+      }
+      
+      if (filteredPerfumes.length > 0) {
+        renderPerfumes();
+      }
     }
 
+    // Search input handler
     document.addEventListener('DOMContentLoaded', function() {
       const searchInput = document.getElementById('searchInput');
       let searchTimeout;
+      
       searchInput.addEventListener('input', function(e) {
         clearTimeout(searchTimeout);
         const query = e.target.value.trim();
+        
         searchTimeout = setTimeout(() => {
           if (query.length === 0) {
             filteredPerfumes = currentFilter === 'all' ? [...allPerfumes] : allPerfumes.filter(p => p.Sex === currentFilter);
-          } else { searchPerfumes(query); }
+          } else {
+            searchPerfumes(query);
+          }
           renderPerfumes();
         }, 300);
       });
     });
 
-    document.addEventListener('click', function(e) {
-      const cartPanel = document.getElementById('cartPanel');
-      const cartBtn = document.querySelector('.cart-btn');
-      if (isCartOpen && !cartPanel.contains(e.target) && !cartBtn.contains(e.target) && !e.target.classList.contains('quantity-btn') && !e.target.closest('.quantity-controls')) {
-        toggleCart();
-      }
-    });
-
-    document.addEventListener('DOMContentLoaded', function() {
-      const cartPanel = document.getElementById('cartPanel');
-      if (cartPanel) { cartPanel.addEventListener('click', function(e) { e.stopPropagation(); }); }
-    });
-
+    // Initialize app
     async function init() {
+      console.log('🚀 Initializing ZHAD Perfume Selection...');
+      
       initTelegramWebApp();
       setLanguage('kz');
-      await loadPerfumes();
-      window.addEventListener('resize', function() { updateViewportHeight(); renderPerfumes(); });
+      await loadAvailableQuantity();
+      
+      window.addEventListener('resize', updateViewportHeight);
+      
+      console.log('✅ Perfume selection ready!');
     }
 
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
-
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') { if (document.getElementById('modalOverlay').style.display === 'flex') closeModal(); else if (isCartOpen) toggleCart(); }
-    });
+    // Start app
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
 
     // Prevent double-tap zoom
     let lastTouchEnd = 0;
     document.addEventListener('touchend', function(e) {
-      const now = Date.now(); if (now - lastTouchEnd <= 300) { e.preventDefault(); }
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) {
+        e.preventDefault();
+      }
       lastTouchEnd = now;
     }, { passive: false });
   </script>

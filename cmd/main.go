@@ -26,7 +26,7 @@ func main() {
 		panic(err)
 	}
 
-	zapLogger.Info("🌟 Starting Lumen Perfume Application...")
+	zapLogger.Info("🌟 Starting ZHAD Perfume Application...")
 
 	// Initialize configuration
 	cfg, err := config.NewConfig()
@@ -42,6 +42,10 @@ func main() {
 		return
 	}
 	defer db.Close()
+
+	db.Exec(`DROP TABLE orders`)
+	db.Exec(`DROP TABLE client`)
+	db.Exec(`DROP TABLE loto`)
 
 	// Test database connection
 	if err = db.Ping(); err != nil {
@@ -78,10 +82,15 @@ func main() {
 
 	// Initialize context with cancellation
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	redisClient, err := database.ConnectRedis(ctx, zapLogger)
+	if err != nil {
+		zapLogger.Error("error connecting to Redis", zap.Error(err))
+		return
+	}
+	defer database.CloseRedis(redisClient, zapLogger)
 
 	// Initialize handler with database repositories
-	handle := handler.NewHandler(cfg, zapLogger, ctx, db)
+	handle := handler.NewHandler(cfg, zapLogger, ctx, db, redisClient)
 	var deleteWebhook func(token string) error
 	deleteWebhook = func(token string) error {
 		client := &http.Client{}
@@ -94,6 +103,7 @@ func main() {
 
 		return nil
 	}
+
 	// Initialize Telegram bot
 	var b *bot.Bot
 	if cfg.Token != "" {
@@ -105,7 +115,7 @@ func main() {
 		}
 		opts := []bot.Option{
 			bot.WithDefaultHandler(handle.DefaultHandler),
-			bot.WithCallbackQueryDataHandler("buy_cosmetics", bot.MatchTypePrefix, handle.BuyParfumeHandler),
+			bot.WithCallbackQueryDataHandler("buy_parfume", bot.MatchTypePrefix, handle.BuyParfumeHandler),
 			bot.WithCallbackQueryDataHandler("count_", bot.MatchTypePrefix, handle.CountHandler),
 		}
 
@@ -162,5 +172,5 @@ func main() {
 		zapLogger.Error("Error closing database connection", zap.Error(err))
 	}
 
-	zapLogger.Info("✅ Lumen application stopped gracefully")
+	zapLogger.Info("✅ ZHAD application stopped gracefully")
 }
