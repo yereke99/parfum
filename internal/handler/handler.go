@@ -95,7 +95,7 @@ func (h *Handler) StartHandler(ctx context.Context, b *bot.Bot, update *models.U
 		return
 	}
 
-	promoText := "24990 теңгеге парфюм жиынтық сатып алыңыз және сыйлықтар ұтып алыңыз!"
+	promoText := "24990тгге 30мл парфюм сатып алып, 10мл, 30мллік парфюм , 89990тглік бриллант жүзік және 100 000 теңге ақшалай сыйлықтың біріне ие болыңыз."
 
 	inlineKbd := &models.InlineKeyboardMarkup{
 		InlineKeyboard: [][]models.InlineKeyboardButton{
@@ -239,7 +239,7 @@ func (h *Handler) BuyParfumeHandler(ctx context.Context, b *bot.Bot, update *mod
 	for i := 0; i < 6; i++ {
 		row := make([]models.InlineKeyboardButton, 5)
 		for j := 0; j < 5; j++ {
-			num := 5*j + 1
+			num := 5*i + j + 1
 			row[j] = models.InlineKeyboardButton{
 				Text:         strconv.Itoa(num),
 				CallbackData: fmt.Sprintf("count_%d", num),
@@ -696,8 +696,6 @@ func (h *Handler) ShareContactCallbackHandler(ctx context.Context, b *bot.Bot, u
 		Checks:       false,
 	}
 
-	fmt.Println("Count: ", state.Count)
-
 	order := domain.OrderEntry{
 		UserID:       userId,
 		Quantity:     state.Count,
@@ -775,7 +773,7 @@ func (h *Handler) getOrCreateUserState(ctx context.Context, userID int64) *domai
 
 // Fixed Handler methods - using repository methods instead of direct DB access
 
-// GetUserAvailableQuantity gets user's available perfume quantity from unpaid orders
+// ENHANCED GetUserAvailableQuantity with temporary selection awareness
 func (h *Handler) GetUserAvailableQuantity(w http.ResponseWriter, r *http.Request) {
 	h.setCORSHeaders(w)
 	if r.Method == "OPTIONS" {
@@ -800,7 +798,7 @@ func (h *Handler) GetUserAvailableQuantity(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Use repository method instead of direct DB access
+	// Get user's orders
 	orders, err := h.orderRepo.GetUnpaidOrdersByUser(telegramID)
 	if err != nil {
 		h.logger.Error("Error getting user orders", zap.Error(err))
@@ -809,7 +807,9 @@ func (h *Handler) GetUserAvailableQuantity(w http.ResponseWriter, r *http.Reques
 	}
 
 	var totalQuantity int
+	var temporaryQuantity int
 	var orderDetails []map[string]interface{}
+	var hasTemporarySelections bool
 
 	for _, order := range orders {
 		orderQuantity := 0
@@ -820,7 +820,15 @@ func (h *Handler) GetUserAvailableQuantity(w http.ResponseWriter, r *http.Reques
 		// Parse existing perfume selections
 		selectedPerfumes := []string{}
 		usedQuantity := 0
+		isTemporarySelection := false
+
 		if order.Parfumes != "" {
+			// Check if this is a temporary selection (has perfumes but no address)
+			if order.Address != "" || order.Address == "" {
+				isTemporarySelection = true
+				hasTemporarySelections = true
+			}
+
 			parts := strings.Split(order.Parfumes, ",")
 			for _, part := range parts {
 				if trimmed := strings.TrimSpace(part); trimmed != "" {
@@ -830,6 +838,9 @@ func (h *Handler) GetUserAvailableQuantity(w http.ResponseWriter, r *http.Reques
 						if quantityStr := strings.TrimSpace(trimmed[colonIndex+1:]); quantityStr != "" {
 							if qty, err := strconv.Atoi(quantityStr); err == nil {
 								usedQuantity += qty
+								if isTemporarySelection {
+									temporaryQuantity += qty
+								}
 							}
 						}
 					}
@@ -848,19 +859,34 @@ func (h *Handler) GetUserAvailableQuantity(w http.ResponseWriter, r *http.Reques
 			"used_quantity":     usedQuantity,
 			"available":         availableInThisOrder,
 			"selected_perfumes": selectedPerfumes,
+			"is_temporary":      isTemporarySelection,
 			"created_at":        order.CreatedAt,
 		})
 	}
 
+	// FIXED: If we have temporary selections but backend shows 0 available,
+	// restore access by adding back the temporary quantity
+	effectiveAvailableQuantity := totalQuantity
+	if totalQuantity == 0 && temporaryQuantity > 0 {
+		effectiveAvailableQuantity = temporaryQuantity
+		h.logger.Info("Restoring user access due to temporary selections",
+			zap.Int64("telegram_id", telegramID),
+			zap.Int("temporary_quantity", temporaryQuantity))
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"success":            true,
-		"available_quantity": totalQuantity,
-		"orders":             orderDetails,
+		"success":                  true,
+		"available_quantity":       effectiveAvailableQuantity,
+		"original_available":       totalQuantity,
+		"temporary_quantity":       temporaryQuantity,
+		"has_temporary_selections": hasTemporarySelections,
+		"access_restored":          totalQuantity == 0 && temporaryQuantity > 0,
+		"orders":                   orderDetails,
 	})
 }
 
-// SavePerfumeSelection saves user's perfume selection
+// ENHANCED SavePerfumeSelection with better temporary storage logic
 func (h *Handler) SavePerfumeSelection(w http.ResponseWriter, r *http.Request) {
 	h.setCORSHeaders(w)
 	if r.Method == "OPTIONS" {
@@ -889,11 +915,6 @@ func (h *Handler) SavePerfumeSelection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(req.SelectedPerfumes) == 0 {
-		http.Error(w, "No perfumes selected", http.StatusBadRequest)
-		return
-	}
-
 	// Calculate total selected quantity
 	totalSelected := 0
 	for _, perfume := range req.SelectedPerfumes {
@@ -902,17 +923,104 @@ func (h *Handler) SavePerfumeSelection(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Get user's available quantity using repository method
-	availableQuantity, err := h.orderRepo.GetAvailableQuantityForUser(req.TelegramID)
+	// FIXED: Enhanced logic to handle both fresh selections and restored access
+	var availableQuantity int
+	var targetOrderID int64 = -1
+
+	// First, get the user's original available quantity from unpaid orders
+	originalAvailableQuantity, err := h.orderRepo.GetAvailableQuantityForUser(req.TelegramID)
 	if err != nil {
-		h.logger.Error("Error getting available quantity", zap.Error(err))
+		h.logger.Error("Error getting original available quantity", zap.Error(err))
 		http.Error(w, "Error checking available quantity", http.StatusInternalServerError)
 		return
 	}
 
+	// Check if user had temporary selections that we need to account for
+	orders, err := h.orderRepo.GetUnpaidOrdersByUser(req.TelegramID)
+	if err != nil {
+		h.logger.Error("Error finding orders", zap.Error(err))
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+
+	// Calculate previously used quantity from temporary selections
+	var previousTempQuantity int
+	for _, order := range orders {
+		if order.Parfumes != "" && order.Address == "" {
+			// This is a temporary selection - count its quantity
+			parts := strings.Split(order.Parfumes, ",")
+			for _, part := range parts {
+				if trimmed := strings.TrimSpace(part); trimmed != "" {
+					if colonIndex := strings.Index(trimmed, ":"); colonIndex > 0 {
+						if quantityStr := strings.TrimSpace(trimmed[colonIndex+1:]); quantityStr != "" {
+							if qty, err := strconv.Atoi(quantityStr); err == nil {
+								previousTempQuantity += qty
+								if targetOrderID == -1 {
+									targetOrderID = order.ID // Use this order for updating
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// FIXED: If no temporary selections exist, find a fresh order to use
+	if targetOrderID == -1 {
+		for _, order := range orders {
+			if order.Quantity == nil {
+				continue
+			}
+			orderQuantity := *order.Quantity
+
+			// Calculate used quantity in this order
+			usedQuantity := 0
+			if order.Parfumes != "" {
+				parts := strings.Split(order.Parfumes, ",")
+				for _, part := range parts {
+					if trimmed := strings.TrimSpace(part); trimmed != "" {
+						if colonIndex := strings.Index(trimmed, ":"); colonIndex > 0 {
+							if quantityStr := strings.TrimSpace(trimmed[colonIndex+1:]); quantityStr != "" {
+								if qty, err := strconv.Atoi(quantityStr); err == nil {
+									usedQuantity += qty
+								}
+							}
+						}
+					}
+				}
+			}
+
+			availableInThisOrder := orderQuantity - usedQuantity
+			if availableInThisOrder > 0 {
+				targetOrderID = order.ID
+				break
+			}
+		}
+	}
+
+	// Calculate effective available quantity
+	if previousTempQuantity > 0 {
+		// User had temporary selections - restore their effective available quantity
+		availableQuantity = previousTempQuantity
+		h.logger.Info("Restoring user access with temporary quantity",
+			zap.Int64("telegram_id", req.TelegramID),
+			zap.Int("previous_temp_quantity", previousTempQuantity),
+			zap.Int("original_available", originalAvailableQuantity))
+	} else {
+		// Fresh selection - use original available quantity
+		availableQuantity = originalAvailableQuantity
+	}
+
+	// Validate against effective available quantity
 	if totalSelected > availableQuantity {
 		http.Error(w, fmt.Sprintf("Not enough quantity available. You have %d, trying to select %d",
 			availableQuantity, totalSelected), http.StatusBadRequest)
+		return
+	}
+
+	if targetOrderID == -1 {
+		http.Error(w, "No available orders found", http.StatusBadRequest)
 		return
 	}
 
@@ -928,51 +1036,7 @@ func (h *Handler) SavePerfumeSelection(w http.ResponseWriter, r *http.Request) {
 
 	parfumeString := strings.Join(parfumeSelections, ", ")
 
-	// Get unpaid orders to find the best one to update
-	orders, err := h.orderRepo.GetUnpaidOrdersByUser(req.TelegramID)
-	if err != nil {
-		h.logger.Error("Error finding orders", zap.Error(err))
-		http.Error(w, "Database error", http.StatusInternalServerError)
-		return
-	}
-
-	var targetOrderID int64 = -1
-	for _, order := range orders {
-		if order.Quantity == nil {
-			continue
-		}
-		orderQuantity := *order.Quantity
-
-		// Calculate used quantity in this order
-		usedQuantity := 0
-		if order.Parfumes != "" {
-			parts := strings.Split(order.Parfumes, ",")
-			for _, part := range parts {
-				if trimmed := strings.TrimSpace(part); trimmed != "" {
-					if colonIndex := strings.Index(trimmed, ":"); colonIndex > 0 {
-						if quantityStr := strings.TrimSpace(trimmed[colonIndex+1:]); quantityStr != "" {
-							if qty, err := strconv.Atoi(quantityStr); err == nil {
-								usedQuantity += qty
-							}
-						}
-					}
-				}
-			}
-		}
-
-		availableInThisOrder := orderQuantity - usedQuantity
-		if availableInThisOrder > 0 {
-			targetOrderID = order.ID
-			break
-		}
-	}
-
-	if targetOrderID == -1 {
-		http.Error(w, "No available orders found", http.StatusBadRequest)
-		return
-	}
-
-	// Update the order with perfume selection using repository method
+	// Update the order with perfume selection (this creates temporary selection)
 	err = h.orderRepo.UpdatePerfumeSelection(targetOrderID, parfumeString)
 	if err != nil {
 		h.logger.Error("Error updating order with perfumes", zap.Error(err))
@@ -980,17 +1044,20 @@ func (h *Handler) SavePerfumeSelection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logger.Info("Perfume selection saved",
+	h.logger.Info("Perfume selection saved (temporary)",
 		zap.Int64("telegram_id", req.TelegramID),
 		zap.Int64("order_id", targetOrderID),
-		zap.String("perfumes", parfumeString))
+		zap.String("perfumes", parfumeString),
+		zap.Bool("is_restored_access", previousTempQuantity > 0))
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
-		"success":  true,
-		"message":  "Perfume selection saved successfully",
-		"order_id": targetOrderID,
-		"perfumes": parfumeString,
+		"success":         true,
+		"message":         "Perfume selection saved successfully",
+		"order_id":        targetOrderID,
+		"perfumes":        parfumeString,
+		"is_temporary":    true,
+		"restored_access": previousTempQuantity > 0,
 	})
 }
 
@@ -1151,6 +1218,101 @@ func (h *Handler) sendOrderConfirmationMessage(telegramID, orderID int64, userNa
 	}
 }
 
+// GetUserTemporarySelections retrieves user's temporary perfume selections
+func (h *Handler) GetUserTemporarySelections(w http.ResponseWriter, r *http.Request) {
+	h.setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	telegramIDStr := r.URL.Query().Get("telegram_id")
+	if telegramIDStr == "" {
+		http.Error(w, "telegram_id parameter required", http.StatusBadRequest)
+		return
+	}
+
+	telegramID, err := strconv.ParseInt(telegramIDStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid telegram_id", http.StatusBadRequest)
+		return
+	}
+
+	// Get orders with perfume selections that haven't been finalized (no address yet)
+	orders, err := h.orderRepo.GetUnpaidOrdersByUser(telegramID)
+	if err != nil {
+		h.logger.Error("Error getting user orders for temp selections", zap.Error(err))
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+
+	var temporarySelections []map[string]interface{}
+	var totalTempQuantity int
+
+	for _, order := range orders {
+		// Check if this order has perfume selections but no address (meaning it's temporary)
+		if order.Parfumes != "" && (order.Address == "" || order.Address == "") {
+			// Parse the perfume selections
+			parts := strings.Split(order.Parfumes, ",")
+			for _, part := range parts {
+				if trimmed := strings.TrimSpace(part); trimmed != "" {
+					// Extract name and quantity from format "name: quantity"
+					if colonIndex := strings.Index(trimmed, ":"); colonIndex > 0 {
+						name := strings.TrimSpace(trimmed[:colonIndex])
+						quantityStr := strings.TrimSpace(trimmed[colonIndex+1:])
+						if quantity, err := strconv.Atoi(quantityStr); err == nil && quantity > 0 {
+							// Try to find the perfume ID by name
+							perfumeID := h.findPerfumeIDByName(name)
+							if perfumeID != "" {
+								temporarySelections = append(temporarySelections, map[string]interface{}{
+									"id":       perfumeID,
+									"name":     name,
+									"quantity": quantity,
+								})
+								totalTempQuantity += quantity
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	h.logger.Info("Retrieved temporary selections",
+		zap.Int64("telegram_id", telegramID),
+		zap.Int("total_temp_quantity", totalTempQuantity),
+		zap.Int("selection_count", len(temporarySelections)))
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":             true,
+		"selections":          temporarySelections,
+		"total_quantity":      totalTempQuantity,
+		"has_temp_selections": len(temporarySelections) > 0,
+	})
+}
+
+// Helper function to find perfume ID by name
+func (h *Handler) findPerfumeIDByName(name string) string {
+	perfumes, err := h.parfumeRepo.GetAll()
+	if err != nil {
+		h.logger.Error("Error getting perfumes for name lookup", zap.Error(err))
+		return ""
+	}
+
+	for _, perfume := range perfumes {
+		if perfume.NameParfume == name {
+			return perfume.Id
+		}
+	}
+	return ""
+}
+
 // SetBot sets the bot instance for the handler
 func (h *Handler) SetBot(b *bot.Bot) {
 	h.bot = b
@@ -1250,8 +1412,9 @@ func (h *Handler) StartWebServer(ctx context.Context, b *bot.Bot) {
 	mux.HandleFunc("/api/delete-parfume/", h.handleDeletePerfume)
 	mux.HandleFunc("/api/search-parfumes", h.handleSearchPerfumes)
 
-	// New perfume selection API endpoints
+	// Cart service
 	mux.HandleFunc("/api/user/available-quantity", h.GetUserAvailableQuantity)
+	mux.HandleFunc("/api/user/temp-selections", h.GetUserTemporarySelections) // NEW ENDPOINT
 	mux.HandleFunc("/api/user/save-perfume-selection", h.SavePerfumeSelection)
 	mux.HandleFunc("/api/order/complete", h.UpdateOrderWithClientInfo)
 

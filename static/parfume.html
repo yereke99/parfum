@@ -97,6 +97,47 @@
       box-shadow: var(--shadow-glow);
     }
 
+    /* Restored Selection Notice */
+    .restored-notice {
+      background: linear-gradient(135deg, var(--uber-green), #16a085);
+      color: white;
+      padding: 12px 16px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 14px;
+      margin: 16px;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(34, 197, 94, 0.3);
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: all 0.3s ease;
+    }
+
+    .restored-notice.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Access Restored Notice for users who lost permission */
+    .access-restored-notice {
+      background: linear-gradient(135deg, var(--uber-orange), #ea580c);
+      color: white;
+      padding: 16px;
+      text-align: center;
+      font-weight: 600;
+      margin: 16px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(249, 115, 22, 0.3);
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: all 0.3s ease;
+    }
+
+    .access-restored-notice.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
     /* Warning Alert */
     .warning-alert {
       background: linear-gradient(135deg, var(--uber-orange), #ea580c);
@@ -409,6 +450,16 @@
       Таңдалды: <span id="selectedCount">0</span> / <span id="totalLimit">0</span>
     </div>
 
+    <!-- Restored Selection Notice -->
+    <div class="restored-notice hidden" id="restoredNotice">
+      ✅ Сіздің бұрынғы таңдауыңыз қалпына келтірілді!
+    </div>
+
+    <!-- Access Restored Notice -->
+    <div class="access-restored-notice hidden" id="accessRestoredNotice">
+      🔄 Қайтып келгеніңізге қуаныштымыз! Сіздің таңдауларыңыз сақталды.
+    </div>
+
     <!-- Warning Alert -->
     <div class="warning-alert hidden" id="warningAlert">
       ⚠️ Лимит асып кетті!
@@ -463,6 +514,9 @@
     let availableQuantity = 0;
     let telegramId = null;
     let currentFilter = 'all';
+    let accessWasRestored = false; // Track if we restored access
+    let saveTimeout;
+    let isCurrentlySaving = false;
 
     // Translations
     const translations = {
@@ -488,7 +542,9 @@
         limitStatus: 'Выбрано: {selected} / {limit}',
         emptySearchTitle: 'Ничего не найдено',
         emptySearchSubtitle: 'Попробуйте изменить поисковый запрос',
-        warningAlert: '⚠️ Лимит превышен!'
+        warningAlert: '⚠️ Лимит превышен!',
+        restoredNotice: '✅ Ваш предыдущий выбор восстановлен!',
+        accessRestoredNotice: '🔄 Рады видеть вас снова! Ваши выборы сохранены.'
       },
       kz: {
         title: 'ZHAD PARFUME',
@@ -512,7 +568,9 @@
         limitStatus: 'Таңдалды: {selected} / {limit}',
         emptySearchTitle: 'Ештеңе табылмады',
         emptySearchSubtitle: 'Іздеу сөзін өзгертіп көріңіз',
-        warningAlert: '⚠️ Лимит асып кетті!'
+        warningAlert: '⚠️ Лимит асып кетті!',
+        restoredNotice: '✅ Сіздің бұрынғы таңдауыңыз қалпына келтірілді!',
+        accessRestoredNotice: '🔄 Қайтып келгеніңізге қуаныштымыз! Сіздің таңдауларыңыз сақталды.'
       }
     };
 
@@ -556,7 +614,7 @@
       document.documentElement.style.setProperty('--tg-viewport-height', `${vh}px`);
     }
 
-    // Load user's available quantity
+    // Enhanced function to load available quantity and restore access if needed
     async function loadAvailableQuantity() {
       if (!telegramId) {
         console.warn('No Telegram ID available');
@@ -565,12 +623,35 @@
       }
 
       try {
+        console.log('📊 Loading available quantity from backend...');
         const response = await fetch(`/api/user/available-quantity?telegram_id=${telegramId}`);
         const data = await response.json();
         
         if (data.success) {
-          availableQuantity = data.available_quantity;
-          console.log('Available quantity:', availableQuantity);
+          console.log('💡 Backend response:', data);
+          
+          // Check if access was restored due to temporary selections
+          if (data.access_restored) {
+            console.log('🔄 ACCESS RESTORED: User had temporary selections, restoring access');
+            availableQuantity = data.available_quantity;
+            accessWasRestored = true;
+            
+            // Load and restore the temporary selections
+            await loadAndRestoreTemporarySelections();
+            
+            showAccessRestoredNotice();
+          } else if (data.has_temporary_selections) {
+            console.log('📦 Found temporary selections, restoring...');
+            availableQuantity = data.available_quantity;
+            
+            // Load and restore the temporary selections
+            await loadAndRestoreTemporarySelections();
+            
+            showRestoredNotice();
+          } else {
+            // Normal flow - no temporary selections
+            availableQuantity = data.available_quantity;
+          }
           
           if (availableQuantity > 0) {
             showQuantityNotice(availableQuantity);
@@ -580,12 +661,139 @@
             showNoQuantityAlert();
           }
         } else {
+          console.error('❌ Backend error:', data);
           showNoQuantityAlert();
         }
       } catch (error) {
-        console.error('Error loading available quantity:', error);
+        console.error('❌ Error loading available quantity:', error);
         showNoQuantityAlert();
       }
+    }
+
+    // Load and restore temporary selections from backend
+    async function loadAndRestoreTemporarySelections() {
+      if (!telegramId) return;
+
+      try {
+        console.log('🔍 Loading temporary selections from backend...');
+        const response = await fetch(`/api/user/temp-selections?telegram_id=${telegramId}`);
+        const data = await response.json();
+        
+        if (data.success && data.has_temp_selections && data.selections.length > 0) {
+          console.log('✅ Found temporary selections:', data.selections);
+          
+          // Clear current selections
+          selectedPerfumes = {};
+          
+          // Restore each selection
+          data.selections.forEach(selection => {
+            if (selection.id && selection.quantity) {
+              selectedPerfumes[selection.id] = selection.quantity;
+              console.log(`Restored: ${selection.name} x${selection.quantity}`);
+            }
+          });
+          
+          // Update UI
+          updateSelectionCounter();
+          updateLimitStatus();
+          
+          console.log('🔄 Temporary selections restored to UI');
+          return true;
+        } else {
+          console.log('📭 No temporary selections found');
+          return false;
+        }
+      } catch (error) {
+        console.error('❌ Error loading temporary selections:', error);
+        return false;
+      }
+    }
+
+    // Enhanced auto-save with better error handling and retry logic
+    async function autoSaveSelection() {
+      clearTimeout(saveTimeout);
+      
+      // Don't start a new save if one is already in progress
+      if (isCurrentlySaving) {
+        console.log('⏳ Save already in progress, scheduling retry...');
+        saveTimeout = setTimeout(() => autoSaveSelection(), 2000);
+        return;
+      }
+      
+      saveTimeout = setTimeout(async () => {
+        await saveTemporarySelectionWithRetry();
+      }, 1000); // Save 1 second after last change
+    }
+
+    // Save temporary selection with retry logic
+    async function saveTemporarySelectionWithRetry(maxRetries = 3) {
+      if (!telegramId || isCurrentlySaving) return;
+
+      isCurrentlySaving = true;
+      
+      const selectionData = [];
+      for (const [perfumeId, quantity] of Object.entries(selectedPerfumes)) {
+        const perfume = allPerfumes.find(p => p.Id === perfumeId);
+        if (perfume) {
+          selectionData.push({
+            id: perfumeId,
+            name: perfume.NameParfume,
+            quantity: quantity
+          });
+        }
+      }
+
+      let retryCount = 0;
+      
+      while (retryCount < maxRetries) {
+        try {
+          console.log(`💾 Saving temporary selection (attempt ${retryCount + 1})...`);
+          
+          const response = await fetch('/api/user/save-perfume-selection', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              telegram_id: telegramId,
+              selected_perfumes: selectionData
+            }),
+          });
+
+          const result = await response.json();
+          
+          if (result.success) {
+            console.log('✅ Temporary selection auto-saved successfully');
+            
+            // Check if this was a restored access save
+            if (result.restored_access) {
+              console.log('🔄 Access was restored during save');
+            }
+            
+            isCurrentlySaving = false;
+            return true;
+          } else {
+            throw new Error(result.message || 'Save failed');
+          }
+        } catch (error) {
+          retryCount++;
+          console.warn(`⚠️ Failed to auto-save selection (attempt ${retryCount}):`, error);
+          
+          if (retryCount < maxRetries) {
+            // Wait before retrying (exponential backoff)
+            const delay = Math.min(1000 * Math.pow(2, retryCount), 5000);
+            console.log(`⏳ Retrying in ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          } else {
+            console.error('❌ Failed to save selection after all retries');
+            isCurrentlySaving = false;
+            return false;
+          }
+        }
+      }
+      
+      isCurrentlySaving = false;
+      return false;
     }
 
     // Show quantity notice
@@ -646,9 +854,44 @@
       }, 3000);
     }
 
+    // Show restored selection notice
+    function showRestoredNotice() {
+      const notice = document.getElementById('restoredNotice');
+      notice.textContent = translations[currentLang].restoredNotice;
+      notice.classList.remove('hidden');
+      notice.classList.add('show');
+      
+      // Hide after 4 seconds
+      setTimeout(() => {
+        notice.classList.remove('show');
+        setTimeout(() => {
+          notice.classList.add('hidden');
+        }, 300);
+      }, 4000);
+    }
+
+    // Show access restored notice for users who lost permission
+    function showAccessRestoredNotice() {
+      const notice = document.getElementById('accessRestoredNotice');
+      if (notice) {
+        notice.textContent = translations[currentLang].accessRestoredNotice;
+        notice.classList.remove('hidden');
+        notice.classList.add('show');
+        
+        // Hide after 6 seconds (longer since this is important)
+        setTimeout(() => {
+          notice.classList.remove('show');
+          setTimeout(() => {
+            notice.classList.add('hidden');
+          }, 300);
+        }, 6000);
+      }
+    }
+
     // Load perfumes from API
     async function loadPerfumes() {
       try {
+        console.log('🌸 Loading perfumes from API...');
         const response = await fetch('/api/parfumes');
         if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         
@@ -656,8 +899,9 @@
         filteredPerfumes = [...allPerfumes];
         renderPerfumes();
         
+        console.log('✅ Perfumes loaded successfully');
       } catch (error) {
-        console.error('Error loading perfumes:', error);
+        console.error('❌ Error loading perfumes:', error);
         showEmptyState('error', 'Қате орын алды', 'Парфюмдерді жүктеу мүмкін болмады');
       }
     }
@@ -708,7 +952,7 @@
       container.innerHTML = html;
     }
 
-    // Change perfume quantity - FIXED LOGIC
+    // Enhanced change quantity with better state management
     function changeQuantity(perfumeId, change) {
       const currentQuantity = selectedPerfumes[perfumeId] || 0;
       const newQuantity = currentQuantity + change;
@@ -746,6 +990,9 @@
         selectedPerfumes[perfumeId] = newQuantity;
         console.log(`Set ${perfumeId} quantity to ${newQuantity}`);
       }
+      
+      // Auto-save temporary selection (with debouncing)
+      autoSaveSelection();
       
       // Update UI
       updateSelectionCounter();
@@ -857,7 +1104,7 @@
       renderPerfumes();
     }
 
-    // Proceed to order (save selection and redirect)
+    // Enhanced proceed to order with better validation
     async function proceedToOrder() {
       const totalSelected = getTotalSelectedQuantity();
       if (totalSelected === 0) {
@@ -894,7 +1141,9 @@
       console.log('Proceeding to order with selection:', selectionData);
 
       try {
-        // Save selection to backend
+        // Force save final selection to backend before redirecting
+        isCurrentlySaving = true; // Prevent auto-save conflicts
+        
         const response = await fetch('/api/user/save-perfume-selection', {
           method: 'POST',
           headers: {
@@ -909,17 +1158,22 @@
         const result = await response.json();
         
         if (result.success) {
-          console.log('Selection saved successfully');
-          // Redirect to order form
-          window.location.href = '/order';
+          console.log('✅ Final selection saved successfully');
+          
+          // Small delay to ensure save is complete
+          setTimeout(() => {
+            window.location.href = '/order';
+          }, 500);
         } else {
           throw new Error(result.message || 'Failed to save selection');
         }
       } catch (error) {
-        console.error('Error saving selection:', error);
+        console.error('❌ Error saving selection:', error);
         if (window.Telegram && Telegram.WebApp) {
           Telegram.WebApp.showAlert('Қате орын алды: ' + error.message);
         }
+      } finally {
+        isCurrentlySaving = false;
       }
     }
 
@@ -977,12 +1231,44 @@
       });
     });
 
+    // Handle page visibility changes to save selections
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden) {
+        // Page is being hidden - force save selections
+        console.log('🔄 Page hidden, force saving selections...');
+        if (Object.keys(selectedPerfumes).length > 0) {
+          // Force immediate save without debouncing
+          clearTimeout(saveTimeout);
+          saveTemporarySelectionWithRetry(1); // Single attempt for immediate save
+        }
+      }
+    });
+
+    // Handle beforeunload to save selections
+    window.addEventListener('beforeunload', function(e) {
+      if (Object.keys(selectedPerfumes).length > 0 && !isCurrentlySaving) {
+        console.log('🔄 Page unloading, attempting to save selections...');
+        // Try synchronous save (may not always work due to browser limitations)
+        navigator.sendBeacon && navigator.sendBeacon('/api/user/save-perfume-selection', 
+          JSON.stringify({
+            telegram_id: telegramId,
+            selected_perfumes: Object.entries(selectedPerfumes).map(([id, qty]) => {
+              const perfume = allPerfumes.find(p => p.Id === id);
+              return perfume ? { id, name: perfume.NameParfume, quantity: qty } : null;
+            }).filter(Boolean)
+          })
+        );
+      }
+    });
+
     // Initialize app
     async function init() {
       console.log('🚀 Initializing ZHAD Perfume Selection...');
       
       initTelegramWebApp();
       setLanguage('kz');
+      
+      // Load available quantity first, which will also handle temporary selections
       await loadAvailableQuantity();
       
       window.addEventListener('resize', updateViewportHeight);

@@ -927,7 +927,7 @@ func (r *OrderRepository) GetTotalQuantityOrdered() (int, error) {
 func (r *OrderRepository) UpdateClientInfoWithCoordinates(orderID int64, fio, contact, address string) error {
 	query := `
 		UPDATE orders 
-		SET fio = ?, contact = ?, address = ?,  updated_at = CURRENT_TIMESTAMP
+		SET fio = ?, contact = ?, address = ?, checks = true,  updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?
 	`
 

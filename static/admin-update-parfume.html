@@ -13,10 +13,28 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #0a0a0a;
             min-height: 100vh;
             overflow-x: hidden;
             position: relative;
+            
+            /* Telegram WebApp adaptive styles */
+            height: var(--tg-viewport-stable-height, 100vh);
+            padding-top: calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px) + 15px);
+        }
+
+        /* Frameless design */
+        html, body {
+            -webkit-app-region: drag;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        /* Make interactive elements selectable and non-draggable */
+        input, button, textarea, select, a, .upload-zone, .sex-option {
+            -webkit-app-region: no-drag;
+            -webkit-user-select: text;
+            user-select: text;
         }
 
         .app-container {
@@ -29,10 +47,11 @@
         }
 
         .update-form-card {
-            background: rgba(255, 255, 255, 0.95);
+            background: #1a1a1a;
+            border: 1px solid #404040;
             backdrop-filter: blur(20px);
             border-radius: 24px;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7);
             max-width: 600px;
             width: 100%;
             overflow: hidden;
@@ -51,23 +70,13 @@
         }
 
         .form-header {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            color: white;
+            background: linear-gradient(135deg, #404040 0%, #2a2a2a 100%);
+            color: #ffffff;
             padding: 30px;
             text-align: center;
             position: relative;
             overflow: hidden;
-        }
-
-        .form-header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-            opacity: 0.3;
+            border-bottom: 1px solid #606060;
         }
 
         .header-content {
@@ -80,10 +89,11 @@
             font-weight: 300;
             margin-bottom: 8px;
             letter-spacing: -0.5px;
+            color: #ffffff;
         }
 
         .form-subtitle {
-            color: rgba(255, 255, 255, 0.9);
+            color: #b5b5b5;
             font-size: 1rem;
         }
 
@@ -91,9 +101,9 @@
             position: absolute;
             top: 20px;
             right: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #606060;
+            color: #ffffff;
             width: 40px;
             height: 40px;
             border-radius: 50%;
@@ -107,12 +117,15 @@
         }
 
         .close-button:hover {
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.2);
+            border-color: #ffffff;
             transform: scale(1.1);
         }
 
         .form-body {
             padding: 40px;
+            background: #1a1a1a;
+            color: #f5f5f5;
         }
 
         /* Current Photo Display */
@@ -123,7 +136,7 @@
 
         .current-photo-label {
             display: block;
-            color: #1f2937;
+            color: #ffffff;
             margin-bottom: 16px;
             font-weight: 600;
             font-size: 1.1rem;
@@ -139,18 +152,19 @@
             max-width: 200px;
             max-height: 200px;
             border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-            border: 3px solid #e5e7eb;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 3px solid #606060;
             transition: all 0.3s ease;
         }
 
         .current-photo:hover {
             transform: scale(1.05);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+            border-color: #ffffff;
         }
 
         .photo-change-note {
-            color: #6b7280;
+            color: #b5b5b5;
             font-size: 0.9rem;
             font-style: italic;
         }
@@ -162,7 +176,7 @@
 
         .photo-label {
             display: block;
-            color: #1f2937;
+            color: #ffffff;
             margin-bottom: 16px;
             font-weight: 600;
             font-size: 1.1rem;
@@ -175,51 +189,51 @@
         }
 
         .upload-zone {
-            border: 3px dashed #d1d5db;
+            border: 3px dashed #606060;
             border-radius: 20px;
             padding: 40px 30px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+            background: linear-gradient(135deg, #2a2a2a 0%, #404040 100%);
             position: relative;
             overflow: hidden;
         }
 
         .upload-zone:hover {
-            border-color: #f59e0b;
-            background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
+            border-color: #ffffff;
+            background: linear-gradient(135deg, #404040 0%, #2a2a2a 100%);
             transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.15);
+            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.1);
         }
 
         .upload-zone.dragover {
-            border-color: #f59e0b;
-            background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
+            border-color: #ffffff;
+            background: linear-gradient(135deg, #404040 0%, #606060 100%);
             transform: scale(1.02);
         }
 
         .upload-icon {
             font-size: 3.5rem;
             margin-bottom: 20px;
-            color: #9ca3af;
+            color: #b5b5b5;
             transition: all 0.3s ease;
         }
 
         .upload-zone:hover .upload-icon {
-            color: #f59e0b;
+            color: #ffffff;
             transform: scale(1.1);
         }
 
         .upload-text {
-            color: #374151;
+            color: #f5f5f5;
             font-size: 1.2rem;
             margin-bottom: 8px;
             font-weight: 600;
         }
 
         .upload-subtext {
-            color: #6b7280;
+            color: #b5b5b5;
             font-size: 0.95rem;
             line-height: 1.5;
         }
@@ -237,18 +251,19 @@
             max-width: 250px;
             max-height: 250px;
             border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
-            border: 4px solid white;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            border: 4px solid #404040;
             transition: all 0.3s ease;
         }
 
         .preview-image:hover {
             transform: scale(1.05);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            border-color: #ffffff;
         }
 
         .remove-image {
-            background: #ef4444;
+            background: #dc2626;
             color: white;
             border: none;
             padding: 10px 18px;
@@ -261,7 +276,7 @@
         }
 
         .remove-image:hover {
-            background: #dc2626;
+            background: #b91c1c;
             transform: scale(1.05);
         }
 
@@ -283,7 +298,7 @@
 
         .form-label {
             display: block;
-            color: #374151;
+            color: #f5f5f5;
             margin-bottom: 10px;
             font-weight: 600;
             font-size: 1rem;
@@ -292,19 +307,24 @@
         .form-input {
             width: 100%;
             padding: 16px 20px;
-            border: 2px solid #e5e7eb;
+            border: 2px solid #404040;
             border-radius: 16px;
             font-size: 16px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            background: #f9fafb;
+            background: #2a2a2a;
+            color: #f5f5f5;
             font-family: inherit;
+        }
+
+        .form-input::placeholder {
+            color: #808080;
         }
 
         .form-input:focus {
             outline: none;
-            border-color: #f59e0b;
-            box-shadow: 0 0 25px rgba(245, 158, 11, 0.15);
-            background: white;
+            border-color: #ffffff;
+            box-shadow: 0 0 25px rgba(255, 255, 255, 0.1);
+            background: #404040;
             transform: translateY(-1px);
         }
 
@@ -324,15 +344,16 @@
 
         .sex-option {
             padding: 18px 16px;
-            border: 2px solid #e5e7eb;
+            border: 2px solid #404040;
             border-radius: 16px;
-            background: #f9fafb;
+            background: #2a2a2a;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             text-align: center;
             font-weight: 500;
             position: relative;
             overflow: hidden;
+            color: #f5f5f5;
         }
 
         .sex-option::before {
@@ -342,7 +363,7 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
             transition: left 0.5s;
         }
 
@@ -351,18 +372,18 @@
         }
 
         .sex-option:hover {
-            border-color: #f59e0b;
-            background: white;
+            border-color: #ffffff;
+            background: #404040;
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.15);
+            box-shadow: 0 8px 25px rgba(255, 255, 255, 0.1);
         }
 
         .sex-option.active {
-            border-color: #f59e0b;
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            color: white;
+            border-color: #ffffff;
+            background: linear-gradient(135deg, #ffffff 0%, #e5e5e5 100%);
+            color: #0a0a0a;
             transform: scale(1.05);
-            box-shadow: 0 10px 30px rgba(245, 158, 11, 0.3);
+            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.2);
         }
 
         .sex-icon {
@@ -399,7 +420,7 @@
             width: 0;
             height: 0;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
             transition: all 0.5s;
             transform: translate(-50%, -50%);
         }
@@ -410,25 +431,27 @@
         }
 
         .btn-cancel {
-            background: #6b7280;
-            color: white;
+            background: #404040;
+            color: #ffffff;
+            border: 1px solid #606060;
         }
 
         .btn-cancel:hover {
-            background: #4b5563;
+            background: #606060;
+            border-color: #808080;
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(107, 114, 128, 0.3);
+            box-shadow: 0 8px 25px rgba(64, 64, 64, 0.3);
         }
 
         .btn-update {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            color: white;
+            background: linear-gradient(135deg, #ffffff 0%, #e5e5e5 100%);
+            color: #0a0a0a;
             position: relative;
         }
 
         .btn-update:hover {
             transform: translateY(-2px);
-            box-shadow: 0 12px 35px rgba(245, 158, 11, 0.4);
+            box-shadow: 0 12px 35px rgba(255, 255, 255, 0.3);
         }
 
         .btn-update:disabled {
@@ -480,15 +503,15 @@
         }
 
         .message-success {
-            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-            color: #065f46;
-            border: 1px solid #a7f3d0;
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            border: 1px solid #10b981;
         }
 
         .message-error {
-            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-            color: #991b1b;
-            border: 1px solid #fecaca;
+            background: rgba(220, 38, 38, 0.1);
+            color: #dc2626;
+            border: 1px solid #dc2626;
         }
 
         /* Floating Background Elements */
@@ -497,6 +520,7 @@
             pointer-events: none;
             opacity: 0.1;
             z-index: 0;
+            color: #606060;
         }
 
         .decoration-1 {
@@ -566,6 +590,25 @@
             .upload-zone {
                 padding: 25px 15px;
             }
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #404040;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #606060;
         }
     </style>
 </head>

@@ -13,18 +13,27 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-            color: #1e293b;
-            min-height: 100vh;
-            overflow-x: hidden;
-            transition: opacity 0.3s ease;
+            background: #0a0a0a;
+            color: #f5f5f5;
             margin: 0;
             padding: 0;
             border: none;
             outline: none;
+            overflow-x: hidden;
+            transition: opacity 0.3s ease;
+            
+            /* Telegram WebApp full screen optimization */
+            height: var(--tg-viewport-stable-height, 100vh);
+            min-height: var(--tg-viewport-height, 100vh);
+            padding-top: 0;
+            padding-bottom: var(--tg-safe-area-inset-bottom, 0px);
+            
+            /* Prevent system UI overlap */
+            -webkit-touch-callout: none;
+            -webkit-text-size-adjust: 100%;
         }
         
-        /* Remove any browser chrome - Frameless design */
+        /* Frameless design */
         html, body {
             -webkit-app-region: drag;
             -webkit-user-select: none;
@@ -38,6 +47,98 @@
             user-select: text;
         }
 
+        /* Access Denied Styles */
+        .access-denied {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 40px;
+            text-align: center;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+        }
+
+        .access-denied-icon {
+            font-size: 6rem;
+            margin-bottom: 30px;
+            opacity: 0.7;
+            color: #dc2626;
+        }
+
+        .access-denied-title {
+            font-size: 2.5rem;
+            color: #ffffff;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .access-denied-message {
+            font-size: 1.2rem;
+            color: #b5b5b5;
+            max-width: 500px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .access-denied-id {
+            background: rgba(220, 38, 38, 0.1);
+            border: 1px solid #dc2626;
+            color: #ff6b6b;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-family: monospace;
+            font-size: 1rem;
+            margin-bottom: 30px;
+        }
+
+        .back-btn {
+            background: linear-gradient(135deg, #ffffff 0%, #e5e5e5 100%);
+            color: #0a0a0a;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
+        }
+
+        /* Loading Screen */
+        .loading-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #404040;
+            border-top: 4px solid #ffffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #b5b5b5;
+            font-size: 1.1rem;
+        }
+
         .app-container {
             display: flex;
             min-height: 100vh;
@@ -46,31 +147,44 @@
         /* Left Sidebar Dashboard */
         .sidebar {
             width: 280px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            color: #f5f5f5;
             padding: 30px 25px;
-            box-shadow: 5px 0 25px rgba(0, 0, 0, 0.1);
+            box-shadow: 5px 0 25px rgba(0, 0, 0, 0.5);
             position: fixed;
             height: 100vh;
             overflow-y: auto;
+            border-right: 1px solid #404040;
         }
 
         .logo {
             text-align: center;
             margin-bottom: 40px;
             padding-bottom: 30px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            border-bottom: 1px solid #404040;
         }
 
         .logo h1 {
             font-size: 1.8rem;
             font-weight: 300;
             margin-bottom: 5px;
+            color: #ffffff;
         }
 
         .logo p {
-            color: rgba(255, 255, 255, 0.8);
+            color: #b5b5b5;
             font-size: 0.9rem;
+        }
+
+        .admin-info {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid #22c55e;
+            color: #4ade80;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            text-align: center;
         }
 
         .stats-section {
@@ -80,12 +194,13 @@
         .stats-title {
             font-size: 1.1rem;
             margin-bottom: 20px;
-            color: rgba(255, 255, 255, 0.9);
+            color: #e5e5e5;
             font-weight: 600;
         }
 
         .stat-item {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #404040;
             padding: 15px;
             border-radius: 10px;
             margin-bottom: 12px;
@@ -94,7 +209,8 @@
         }
 
         .stat-item:hover {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: #606060;
             transform: translateX(5px);
         }
 
@@ -102,11 +218,12 @@
             font-size: 1.8rem;
             font-weight: bold;
             margin-bottom: 5px;
+            color: #ffffff;
         }
 
         .stat-label {
             font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.8);
+            color: #b5b5b5;
         }
 
         .menu-section {
@@ -116,7 +233,7 @@
         .menu-title {
             font-size: 1.1rem;
             margin-bottom: 20px;
-            color: rgba(255, 255, 255, 0.9);
+            color: #e5e5e5;
             font-weight: 600;
         }
 
@@ -129,22 +246,31 @@
             border-radius: 10px;
             cursor: pointer;
             transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid transparent;
         }
 
         .menu-item:hover {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: #606060;
             transform: translateX(5px);
         }
 
         .menu-item.active {
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.12);
+            border-color: #ffffff;
+            color: #ffffff;
             font-weight: 600;
         }
 
         .menu-icon {
             font-size: 1.2rem;
             width: 20px;
+            color: #b5b5b5;
+        }
+
+        .menu-item.active .menu-icon {
+            color: #ffffff;
         }
 
         /* Main Content Area */
@@ -153,6 +279,7 @@
             margin-left: 280px;
             padding: 30px;
             min-height: 100vh;
+            background: #0a0a0a;
         }
 
         .content-header {
@@ -164,7 +291,7 @@
 
         .page-title {
             font-size: 2rem;
-            color: #1e293b;
+            color: #ffffff;
             font-weight: 600;
         }
 
@@ -176,17 +303,23 @@
         .search-input {
             width: 100%;
             padding: 15px 20px 15px 50px;
-            border: 2px solid #e2e8f0;
+            border: 2px solid #404040;
             border-radius: 25px;
             font-size: 16px;
-            background: white;
+            background: #1a1a1a;
+            color: #f5f5f5;
             transition: all 0.3s ease;
+        }
+
+        .search-input::placeholder {
+            color: #808080;
         }
 
         .search-input:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 20px rgba(102, 126, 234, 0.15);
+            border-color: #ffffff;
+            background: #2a2a2a;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
         }
 
         .search-icon {
@@ -195,7 +328,7 @@
             top: 50%;
             transform: translateY(-50%);
             font-size: 1.2rem;
-            color: #64748b;
+            color: #808080;
         }
 
         /* Floating Add Button */
@@ -205,13 +338,13 @@
             right: 30px;
             width: 60px;
             height: 60px;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
+            background: linear-gradient(135deg, #ffffff 0%, #e5e5e5 100%);
+            color: #0a0a0a;
             border: none;
             border-radius: 50%;
             font-size: 1.8rem;
             cursor: pointer;
-            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+            box-shadow: 0 8px 25px rgba(255, 255, 255, 0.2);
             transition: all 0.3s ease;
             z-index: 100;
             display: flex;
@@ -221,32 +354,33 @@
 
         .fab:hover {
             transform: scale(1.1) rotate(90deg);
-            box-shadow: 0 12px 35px rgba(16, 185, 129, 0.5);
+            box-shadow: 0 12px 35px rgba(255, 255, 255, 0.3);
         }
 
         /* Perfume Grid */
         .perfumes-container {
-            background: white;
+            background: #1a1a1a;
+            border: 1px solid #404040;
             border-radius: 20px;
-            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
             overflow: hidden;
         }
 
         .container-header {
-            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
             padding: 25px 30px;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid #404040;
         }
 
         .container-title {
             font-size: 1.4rem;
-            color: #1e293b;
+            color: #ffffff;
             font-weight: 600;
             margin-bottom: 5px;
         }
 
         .container-subtitle {
-            color: #64748b;
+            color: #b5b5b5;
             font-size: 0.95rem;
         }
 
@@ -258,25 +392,26 @@
         }
 
         .perfume-card {
-            background: white;
+            background: #2a2a2a;
             border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 3px 15px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 3px 15px rgba(0, 0, 0, 0.3);
             transition: all 0.3s ease;
-            border: 1px solid #f1f5f9;
+            border: 1px solid #404040;
             position: relative;
         }
 
         .perfume-card:hover {
             transform: translateY(-8px);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
-            border-color: #667eea;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            border-color: #ffffff;
         }
 
         .perfume-image {
             width: 100%;
             height: 200px;
             object-fit: cover;
+            border-bottom: 1px solid #404040;
         }
 
         .perfume-content {
@@ -293,13 +428,13 @@
         .perfume-name {
             font-size: 1.2rem;
             font-weight: 600;
-            color: #1e293b;
+            color: #ffffff;
             line-height: 1.3;
         }
 
         .perfume-price {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
+            background: linear-gradient(135deg, #ffffff 0%, #e5e5e5 100%);
+            color: #0a0a0a;
             padding: 6px 12px;
             border-radius: 20px;
             font-size: 0.9rem;
@@ -316,25 +451,29 @@
             border-radius: 15px;
             font-size: 0.8rem;
             font-weight: 500;
+            border: 1px solid #606060;
         }
 
         .sex-male {
-            background: #dbeafe;
-            color: #1d4ed8;
+            background: rgba(100, 149, 237, 0.1);
+            color: #87ceeb;
+            border-color: #87ceeb;
         }
 
         .sex-female {
-            background: #fce7f3;
-            color: #be185d;
+            background: rgba(255, 105, 180, 0.1);
+            color: #ffb6c1;
+            border-color: #ffb6c1;
         }
 
         .sex-unisex {
-            background: #f3e8ff;
-            color: #7c3aed;
+            background: rgba(186, 85, 211, 0.1);
+            color: #dda0dd;
+            border-color: #dda0dd;
         }
 
         .perfume-description {
-            color: #64748b;
+            color: #b5b5b5;
             font-size: 0.9rem;
             line-height: 1.5;
             margin-bottom: 15px;
@@ -361,28 +500,30 @@
         }
 
         .btn-edit {
-            background: #f0f9ff;
-            color: #0369a1;
-            border: 1px solid #e0f2fe;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border: 1px solid #606060;
         }
 
         .btn-edit:hover {
-            background: #0369a1;
-            color: white;
+            background: #ffffff;
+            color: #0a0a0a;
+            border-color: #ffffff;
         }
 
         .btn-delete {
-            background: #fef2f2;
-            color: #dc2626;
-            border: 1px solid #fecaca;
+            background: rgba(220, 38, 38, 0.1);
+            color: #ff6b6b;
+            border: 1px solid #dc2626;
         }
 
         .btn-delete:hover {
             background: #dc2626;
-            color: white;
+            color: #ffffff;
+            border-color: #dc2626;
         }
 
-        /* Modal Styles - Only for Bulk Delete */
+        /* Modal Styles */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -390,7 +531,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(8px);
             z-index: 1000;
             animation: fadeIn 0.3s ease;
@@ -401,9 +542,10 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background: white;
+            background: #1a1a1a;
+            border: 1px solid #404040;
             border-radius: 20px;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7);
             max-width: 650px;
             width: 90%;
             max-height: 90vh;
@@ -422,7 +564,7 @@
         }
 
         .modal-header {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
             color: white;
             padding: 25px 30px;
             display: flex;
@@ -452,30 +594,32 @@
 
         .modal-body {
             padding: 30px;
+            background: #1a1a1a;
+            color: #f5f5f5;
         }
 
         .empty-state {
             text-align: center;
             padding: 80px 30px;
-            color: #6b7280;
+            color: #808080;
         }
 
         .empty-icon {
             font-size: 5rem;
             margin-bottom: 25px;
-            color: #d1d5db;
+            color: #606060;
         }
 
         .empty-title {
             font-size: 1.6rem;
-            color: #374151;
+            color: #e5e5e5;
             margin-bottom: 12px;
             font-weight: 600;
         }
 
         .empty-description {
             font-size: 1.1rem;
-            color: #6b7280;
+            color: #b5b5b5;
             margin-bottom: 30px;
         }
 
@@ -491,30 +635,26 @@
         .spinner {
             width: 50px;
             height: 50px;
-            border: 4px solid #f3f4f6;
-            border-top: 4px solid #667eea;
+            border: 4px solid #404040;
+            border-top: 4px solid #ffffff;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
 
         .toast {
             position: fixed;
             top: 30px;
             right: 30px;
-            background: white;
+            background: #2a2a2a;
+            border: 1px solid #404040;
             border-radius: 12px;
             padding: 20px 25px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
             z-index: 1100;
             transform: translateX(400px);
             transition: transform 0.4s ease;
-            border-left: 5px solid #10b981;
             min-width: 300px;
+            color: #f5f5f5;
         }
 
         .toast.show {
@@ -522,7 +662,11 @@
         }
 
         .toast.error {
-            border-left-color: #ef4444;
+            border-left: 5px solid #dc2626;
+        }
+
+        .toast:not(.error) {
+            border-left: 5px solid #10b981;
         }
 
         .toast-content {
@@ -536,7 +680,7 @@
         }
 
         .toast-message {
-            color: #374151;
+            color: #f5f5f5;
             font-weight: 500;
         }
 
@@ -544,29 +688,30 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
-            background: white;
+            background: #2a2a2a;
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
 
         .delete-table th {
-            background: #f8fafc;
+            background: #404040;
             padding: 18px 15px;
             text-align: left;
             font-weight: 600;
-            color: #374151;
-            border-bottom: 2px solid #e2e8f0;
+            color: #ffffff;
+            border-bottom: 2px solid #606060;
         }
 
         .delete-table td {
             padding: 15px;
-            border-bottom: 1px solid #f1f5f9;
+            border-bottom: 1px solid #404040;
             vertical-align: middle;
+            color: #f5f5f5;
         }
 
         .delete-table tr:hover {
-            background: #f8fafc;
+            background: rgba(255, 255, 255, 0.05);
         }
 
         .table-image {
@@ -574,19 +719,25 @@
             height: 60px;
             border-radius: 10px;
             object-fit: cover;
-            border: 2px solid #e5e7eb;
+            border: 2px solid #606060;
         }
 
         .checkbox {
             transform: scale(1.3);
             margin-right: 12px;
             cursor: pointer;
+            accent-color: #ffffff;
         }
 
         /* Navigation Animation */
         .fade-out {
             opacity: 0.7;
             pointer-events: none;
+        }
+
+        /* Hidden by default */
+        .main-app {
+            display: none;
         }
 
         @media (max-width: 1024px) {
@@ -626,136 +777,281 @@
                 padding: 20px;
             }
         }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #404040;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #606060;
+        }
     </style>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-    <div class="app-container">
-        <!-- Left Sidebar Dashboard -->
-        <div class="sidebar">
-            <div class="logo">
-                <h1>🌸 Парфюм</h1>
-                <p>Басқару Жүйесі</p>
-            </div>
-
-            <div class="stats-section">
-                <div class="stats-title">📊 Статистика</div>
-                <div class="stat-item">
-                    <div class="stat-number" id="totalStat">-</div>
-                    <div class="stat-label">Барлық парфюм</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number" id="maleStat">-</div>
-                    <div class="stat-label">Ерлерге арналған</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number" id="femaleStat">-</div>
-                    <div class="stat-label">Әйелдерге арналған</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number" id="unisexStat">-</div>
-                    <div class="stat-label">Универсалды</div>
-                </div>
-            </div>
-
-            <div class="menu-section">
-                <div class="menu-title">⚙️ Басқару</div>
-                <div class="menu-item active" onclick="showAllPerfumes()">
-                    <div class="menu-icon">📋</div>
-                    <div>Барлық парфюм</div>
-                </div>
-                <div class="menu-item" onclick="navigateToAddPerfume()">
-                    <div class="menu-icon">➕</div>
-                    <div>Жаңа парфюм қосу</div>
-                </div>
-                <div class="menu-item" onclick="filterBySex('Male')">
-                    <div class="menu-icon">👨</div>
-                    <div>Ерлер парфюмі</div>
-                </div>
-                <div class="menu-item" onclick="filterBySex('Female')">
-                    <div class="menu-icon">👩</div>
-                    <div>Әйелдер парфүмі</div>
-                </div>
-                <div class="menu-item" onclick="filterBySex('Unisex')">
-                    <div class="menu-icon">👥</div>
-                    <div>Универсалды</div>
-                </div>
-                <div class="menu-item" onclick="openBulkDeleteModal()">
-                    <div class="menu-icon">🗑️</div>
-                    <div>Көпті өшіру</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main Content -->
-        <div class="main-content">
-            <div class="content-header">
-                <h1 class="page-title">Парфюм Тізімі</h1>
-                <div class="search-container">
-                    <div class="search-icon">🔍</div>
-                    <input type="text" class="search-input" placeholder="Парфюм іздеу..." id="searchInput" oninput="searchPerfumes()">
-                </div>
-            </div>
-
-            <div class="perfumes-container">
-                <div class="container-header">
-                    <div class="container-title">Парфюм Коллекциясы</div>
-                    <div class="container-subtitle">Барлық парфюмдерді басқарыңыз</div>
-                </div>
-                
-                <div id="perfumesDisplay">
-                    <div class="loading-container">
-                        <div class="spinner"></div>
-                        <div>Парфюмдер жүктелуде...</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Floating Add Button -->
-        <button class="fab" onclick="navigateToAddPerfume()" title="Жаңа парфюм қосу">
-            ➕
-        </button>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Рұқсат тексерілуде...</div>
     </div>
 
-    <!-- Bulk Delete Modal -->
-    <div id="deleteModal" class="modal-overlay">
-        <div class="modal">
-            <div class="modal-header">
-                <div class="modal-title">Парфюмдерді өшіру</div>
-                <button class="close-btn" onclick="closeBulkDeleteModal()">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p style="color: #6b7280; margin-bottom: 25px; font-size: 1.1rem;">
-                    ⚠️ Өшіру үшін парфюмдерді таңдаңыз. Бұл әрекетті кері қайтару мүмкін емес.
-                </p>
-                
-                <div id="deleteTableContainer">
-                    <div class="loading-container">
-                        <div class="spinner"></div>
-                        <div>Парфюмдер жүктелуде...</div>
+    <!-- Access Denied Screen -->
+    <div class="access-denied" id="accessDenied" style="display: none;">
+        <div class="access-denied-icon">🚫</div>
+        <div class="access-denied-title">Қол жетімділік жоқ</div>
+        <div class="access-denied-message">
+            Кешіріңіз, сізде бұл басқару панеліне кіру құқығыңыз жоқ. 
+            Тек админдер ғана осы бетке кіре алады.
+        </div>
+        <div class="access-denied-id" id="userIdDisplay">Сіздің ID: -</div>
+        <button class="back-btn" onclick="goBack()">🔙 Артқа оралу</button>
+    </div>
+
+    <!-- Main Application -->
+    <div class="main-app" id="mainApp">
+        <div class="app-container">
+            <!-- Left Sidebar Dashboard -->
+            <div class="sidebar">
+                <div class="logo">
+                    <h1>🌸 Парфюм</h1>
+                    <p>Басқару Жүйесі</p>
+                </div>
+
+                <div class="admin-info" id="adminInfo">
+                    👑 Админ режимі
+                </div>
+
+                <div class="stats-section">
+                    <div class="stats-title">📊 Статистика</div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="totalStat">-</div>
+                        <div class="stat-label">Барлық парфюм</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="maleStat">-</div>
+                        <div class="stat-label">Ерлерге арналған</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="femaleStat">-</div>
+                        <div class="stat-label">Әйелдерге арналған</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="unisexStat">-</div>
+                        <div class="stat-label">Универсалды</div>
                     </div>
                 </div>
-                
-                <div style="display: flex; gap: 15px; margin-top: 30px;">
-                    <button type="button" onclick="closeBulkDeleteModal()" style="flex: 1; background: #6b7280; color: white; padding: 15px; border: none; border-radius: 12px; cursor: pointer; font-weight: 600;">
-                        Бас тарту
-                    </button>
-                    <button type="button" onclick="deleteSelected()" style="flex: 1; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 15px; border: none; border-radius: 12px; cursor: pointer; font-weight: 600;" id="deleteSelectedBtn" disabled>
-                        🗑️ Таңдалғанды өшіру
-                    </button>
+
+                <div class="menu-section">
+                    <div class="menu-title">⚙️ Басқару</div>
+                    <div class="menu-item active" onclick="showAllPerfumes()">
+                        <div class="menu-icon">📋</div>
+                        <div>Барлық парфюм</div>
+                    </div>
+                    <div class="menu-item" onclick="navigateToAddPerfume()">
+                        <div class="menu-icon">➕</div>
+                        <div>Жаңа парфюм қосу</div>
+                    </div>
+                    <div class="menu-item" onclick="filterBySex('Male')">
+                        <div class="menu-icon">👨</div>
+                        <div>Ерлер парфюмі</div>
+                    </div>
+                    <div class="menu-item" onclick="filterBySex('Female')">
+                        <div class="menu-icon">👩</div>
+                        <div>Әйелдер парфүмі</div>
+                    </div>
+                    <div class="menu-item" onclick="filterBySex('Unisex')">
+                        <div class="menu-icon">👥</div>
+                        <div>Универсалды</div>
+                    </div>
+                    <div class="menu-item" onclick="openBulkDeleteModal()">
+                        <div class="menu-icon">🗑️</div>
+                        <div>Көпті өшіру</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="main-content">
+                <div class="content-header">
+                    <h1 class="page-title">Парфюм Тізімі</h1>
+                    <div class="search-container">
+                        <div class="search-icon">🔍</div>
+                        <input type="text" class="search-input" placeholder="Парфюм іздеу..." id="searchInput" oninput="searchPerfumes()">
+                    </div>
+                </div>
+
+                <div class="perfumes-container">
+                    <div class="container-header">
+                        <div class="container-title">Парфюм Коллекциясы</div>
+                        <div class="container-subtitle">Барлық парфюмдерді басқарыңыз</div>
+                    </div>
+                    
+                    <div id="perfumesDisplay">
+                        <div class="loading-container">
+                            <div class="spinner"></div>
+                            <div>Парфюмдер жүктелуде...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Floating Add Button -->
+            <button class="fab" onclick="navigateToAddPerfume()" title="Жаңа парфюм қосу">
+                ➕
+            </button>
+        </div>
+
+        <!-- Bulk Delete Modal -->
+        <div id="deleteModal" class="modal-overlay">
+            <div class="modal">
+                <div class="modal-header">
+                    <div class="modal-title">Парфюмдерді өшіру</div>
+                    <button class="close-btn" onclick="closeBulkDeleteModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p style="color: #b5b5b5; margin-bottom: 25px; font-size: 1.1rem;">
+                        ⚠️ Өшіру үшін парфюмдерді таңдаңыз. Бұл әрекетті кері қайтару мүмкін емес.
+                    </p>
+                    
+                    <div id="deleteTableContainer">
+                        <div class="loading-container">
+                            <div class="spinner"></div>
+                            <div>Парфюмдер жүктелуде...</div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 15px; margin-top: 30px;">
+                        <button type="button" onclick="closeBulkDeleteModal()" style="flex: 1; background: #404040; color: #ffffff; padding: 15px; border: 1px solid #606060; border-radius: 12px; cursor: pointer; font-weight: 600;">
+                            Бас тарту
+                        </button>
+                        <button type="button" onclick="deleteSelected()" style="flex: 1; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 15px; border: none; border-radius: 12px; cursor: pointer; font-weight: 600;" id="deleteSelectedBtn" disabled>
+                            🗑️ Таңдалғанды өшіру
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        // Admin Configuration
+        const ADMIN_IDS = [800703982, 6391833468];
+        let currentUserId = null;
         let allPerfumes = [];
         let filteredPerfumes = [];
         let selectedForDeletion = new Set();
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Admin Permission Check
+        function initAdminCheck() {
+            console.log('🔐 Initializing admin permission check...');
+            
+            if (!window.Telegram || !Telegram.WebApp) {
+                console.warn('⚠️ Telegram WebApp not available - using fallback');
+                // For testing outside Telegram
+                showAccessDenied(null);
+                return;
+            }
+
+            try {
+                Telegram.WebApp.ready();
+                Telegram.WebApp.expand();
+                
+                // Get user data
+                if (Telegram.WebApp.initDataUnsafe?.user) {
+                    currentUserId = Telegram.WebApp.initDataUnsafe.user.id;
+                    console.log('👤 User ID:', currentUserId);
+                    
+                    // Check admin permission
+                    checkAdminPermission(currentUserId);
+                } else {
+                    console.warn('❌ No user data found');
+                    showAccessDenied(null);
+                }
+            } catch (error) {
+                console.error('❌ Error initializing Telegram WebApp:', error);
+                showAccessDenied(null);
+            }
+        }
+
+        function checkAdminPermission(userId) {
+            console.log('🔍 Checking admin permission for user:', userId);
+            console.log('✅ Allowed admin IDs:', ADMIN_IDS);
+            
+            if (ADMIN_IDS.includes(userId)) {
+                console.log('✅ Admin access granted!');
+                showMainApp(userId);
+            } else {
+                console.log('❌ Access denied - user not in admin list');
+                showAccessDenied(userId);
+            }
+        }
+
+        function showMainApp(userId) {
+            // Hide loading and access denied screens
+            document.getElementById('loadingScreen').style.display = 'none';
+            document.getElementById('accessDenied').style.display = 'none';
+            
+            // Show main application
+            document.getElementById('mainApp').style.display = 'block';
+            
+            // Update admin info
+            const adminInfo = document.getElementById('adminInfo');
+            adminInfo.innerHTML = `👑 Админ: ${userId}`;
+            
+            // Initialize the rest of the application
             loadPerfumes();
+            
+            console.log('🚀 Admin panel loaded successfully');
+        }
+
+        function showAccessDenied(userId) {
+            // Hide loading and main app
+            document.getElementById('loadingScreen').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'none';
+            
+            // Show access denied screen
+            document.getElementById('accessDenied').style.display = 'flex';
+            
+            // Update user ID display
+            const userIdDisplay = document.getElementById('userIdDisplay');
+            if (userId) {
+                userIdDisplay.textContent = `Сіздің ID: ${userId}`;
+                userIdDisplay.style.display = 'block';
+            } else {
+                userIdDisplay.style.display = 'none';
+            }
+            
+            console.log('🚫 Access denied screen displayed');
+        }
+
+        function goBack() {
+            // Try to close the WebApp or go back
+            if (window.Telegram && Telegram.WebApp) {
+                Telegram.WebApp.close();
+            } else {
+                // Fallback - go to previous page or close window
+                if (window.history.length > 1) {
+                    window.history.back();
+                } else {
+                    window.close();
+                }
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initAdminCheck();
         });
 
         // Navigation Functions - Open separate pages for add/update
@@ -811,7 +1107,7 @@
                             <div class="empty-icon">🌸</div>
                             <div class="empty-title">Парфюм жоқ</div>
                             <div class="empty-description">Алғашқы парфюмыңызды қосу арқылы коллекцияңызды бастаңыз!</div>
-                            <button onclick="navigateToAddPerfume()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; margin-top: 20px; padding: 15px 30px; border: none; border-radius: 12px; cursor: pointer; font-weight: 600;">
+                            <button onclick="navigateToAddPerfume()" style="background: linear-gradient(135deg, #ffffff 0%, #e5e5e5 100%); color: #0a0a0a; margin-top: 20px; padding: 15px 30px; border: none; border-radius: 12px; cursor: pointer; font-weight: 600;">
                                 ➕ Алғашқы парфюмді қосу
                             </button>
                         </div>
@@ -828,40 +1124,85 @@
                 return;
             }
 
-            const perfumeCards = filteredPerfumes.map(perfume => `
+            // Check if we're on a larger screen for grid layout
+            const isLargeScreen = window.innerWidth >= 768;
+            
+            if (isLargeScreen) {
+                // Grid layout for tablets and desktop
+                let html = `<div class="perfumes-grid">`;
+                html += `<div class="product-count" style="grid-column: 1 / -1; text-align: center; padding: 20px; font-size: 16px; color: #b5b5b5;">${filteredPerfumes.length} тауар</div>`;
+                
+                filteredPerfumes.forEach(perfume => {
+                    html += createPerfumeCard(perfume);
+                });
+                
+                html += `</div>`;
+                container.innerHTML = html;
+            } else {
+                // Mobile list layout
+                let html = `<div style="padding: 20px; text-align: center; color: #b5b5b5; border-bottom: 1px solid #404040;">${filteredPerfumes.length} тауар</div>`;
+                html += `<div class="perfumes-grid">`;
+                
+                filteredPerfumes.forEach(perfume => {
+                    html += createPerfumeCard(perfume);
+                });
+                
+                html += `</div>`;
+                container.innerHTML = html;
+            }
+        }
+
+        function createPerfumeCard(perfume) {
+            const sexLabel = getSexLabel(perfume.Sex);
+            const sexClass = `sex-${perfume.Sex.toLowerCase()}`;
+            
+            return `
                 <div class="perfume-card">
                     <img src="/photo/${perfume.PhotoPath || 'default.jpg'}" 
-                         alt="${perfume.NameParfume}" 
+                         alt="${escapeHtml(perfume.NameParfume)}" 
                          class="perfume-image" 
-                         onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjFmNWY5Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IiM2Yjc4ODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj7auNGB2YPRgNC10YIg2LjQvtGC0LfQsNGC8KCUi8g8L3RleHQ+PC9zdmc+'">
+                         onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjNDA0MDQwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iMTYiIGZpbGw9IiNiNWI1YjUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5TdXJldCBqb3E8L3RleHQ+PC9zdmc+'">
                     
                     <div class="perfume-content">
                         <div class="perfume-header">
-                            <div class="perfume-name">${perfume.NameParfume}</div>
+                            <div class="perfume-name">${escapeHtml(perfume.NameParfume)}</div>
                             <div class="perfume-price">${perfume.Price}₸</div>
                         </div>
                         
                         <div class="perfume-meta">
-                            <span class="perfume-sex sex-${perfume.Sex.toLowerCase()}">
-                                ${perfume.Sex === 'Male' ? '👨 Ерлерге' : perfume.Sex === 'Female' ? '👩 Әйелдерге' : '👥 Универсалды'}
+                            <span class="perfume-sex ${sexClass}">
+                                ${sexLabel}
                             </span>
                         </div>
                         
-                        <div class="perfume-description">${perfume.Description}</div>
+                        <div class="perfume-description">${escapeHtml(perfume.Description)}</div>
                         
                         <div class="card-actions">
                             <button class="btn-card btn-edit" onclick="navigateToUpdatePerfume('${perfume.Id}')">
                                 ✏️ Өзгерту
                             </button>
-                            <button class="btn-card btn-delete" onclick="deleteSingle('${perfume.Id}', '${perfume.NameParfume}')">
+                            <button class="btn-card btn-delete" onclick="deleteSingle('${perfume.Id}', '${escapeHtml(perfume.NameParfume)}')">
                                 🗑️ Өшіру
                             </button>
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `;
+        }
 
-            container.innerHTML = `<div class="perfumes-grid">${perfumeCards}</div>`;
+        function getSexLabel(sex) {
+            const labels = {
+                'Male': '👨 Ерлерге',
+                'Female': '👩 Әйелдерге',
+                'Unisex': '👥 Универсалды'
+            };
+            return labels[sex] || sex;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         function updateStats() {
@@ -935,7 +1276,7 @@
                     <div class="empty-icon">⚠️</div>
                     <div class="empty-title">Қате пайда болды</div>
                     <div class="empty-description">Желілік байланысты тексеріп, қайталап көріңіз</div>
-                    <button onclick="loadPerfumes()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin-top: 20px; padding: 15px 30px; border: none; border-radius: 12px; cursor: pointer; font-weight: 600;">
+                    <button onclick="loadPerfumes()" style="background: linear-gradient(135deg, #ffffff 0%, #e5e5e5 100%); color: #0a0a0a; margin-top: 20px; padding: 15px 30px; border: none; border-radius: 12px; cursor: pointer; font-weight: 600;">
                         🔄 Қайталау
                     </button>
                 </div>
@@ -980,16 +1321,16 @@
                              onerror="this.style.opacity='0.3'">
                     </td>
                     <td>
-                        <strong>${perfume.NameParfume}</strong>
+                        <strong>${escapeHtml(perfume.NameParfume)}</strong>
                     </td>
                     <td>
                         <span class="perfume-sex sex-${perfume.Sex.toLowerCase()}">
-                            ${perfume.Sex === 'Male' ? '👨 Ерлерге' : perfume.Sex === 'Female' ? '👩 Әйелдерге' : '👥 Универсалды'}
+                            ${getSexLabel(perfume.Sex)}
                         </span>
                     </td>
                     <td><strong>${perfume.Price}₸</strong></td>
                     <td>
-                        <button class="btn-card btn-delete" onclick="deleteSingle('${perfume.Id}', '${perfume.NameParfume}')" style="white-space: nowrap;">
+                        <button class="btn-card btn-delete" onclick="deleteSingle('${perfume.Id}', '${escapeHtml(perfume.NameParfume)}')" style="white-space: nowrap;">
                             🗑️ Өшіру
                         </button>
                     </td>
@@ -1150,12 +1491,17 @@
 
         // Handle page reload on return from add/update pages
         window.addEventListener('focus', function() {
-            // Reload perfumes when returning to this page
-            loadPerfumes();
+            // Only reload if we're already authenticated
+            if (document.getElementById('mainApp').style.display !== 'none') {
+                loadPerfumes();
+            }
         });
 
         // Add keyboard shortcuts
         document.addEventListener('keydown', function(e) {
+            // Only handle shortcuts if main app is visible
+            if (document.getElementById('mainApp').style.display === 'none') return;
+            
             // Ctrl/Cmd + N for new perfume
             if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
                 e.preventDefault();
