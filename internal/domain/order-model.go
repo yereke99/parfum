@@ -3,67 +3,70 @@ package domain
 import (
 	"database/sql"
 	"fmt"
+	"time"
 )
 
+// OrderEntry — запись из списка заказов (как она читается из БД)
 type OrderEntry struct {
-	ID           int64          `json:"id" db:"id"`
-	UserID       int64          `json:"userID" db:"id_user"`
-	UserName     string         `json:"userName" db:"userName"`
-	Parfumes     string         `json:"parfumes" db:"parfumes"`
-	Quantity     int            `json:"quantity" db:"quantity"`
-	Fio          sql.NullString `json:"fio" db:"fio"`
-	Contact      string         `json:"contact" db:"contact"`
-	Address      sql.NullString `json:"address" db:"address"`
-	DateRegister sql.NullString `json:"dateRegister" db:"dateRegister"`
-	DatePay      string         `json:"dataPay" db:"dataPay"`
-	Checks       bool           `json:"checks" db:"checks"`
+	ID           int64          `json:"id"            db:"id"`
+	UserID       int64          `json:"userID"        db:"id_user"`
+	UserName     string         `json:"userName"      db:"userName"`
+	Parfumes     string         `json:"parfumes"      db:"parfumes"`
+	Quantity     int            `json:"quantity"      db:"quantity"`
+	Fio          sql.NullString `json:"fio"           db:"fio"`
+	Contact      string         `json:"contact"       db:"contact"`
+	Address      sql.NullString `json:"address"       db:"address"`
+	DateRegister sql.NullString `json:"dateRegister"  db:"dateRegister"`
+	DatePay      string         `json:"dataPay"       db:"dataPay"` // имя поля — DatePay, но ключи — dataPay
+	Checks       bool           `json:"checks"        db:"checks"`
 }
 
-// Order represents the order entity with the new schema
+// Order — полная доменная модель заказа
 type Order struct {
-	ID           int64  `json:"id" db:"id"`
-	IDUser       int64  `json:"id_user" db:"id_user"`
-	UserName     string `json:"userName" db:"userName"`
-	Quantity     *int   `json:"quantity" db:"quantity"`
-	Parfumes     string `json:"parfumes" db:"parfumes"`
-	FIO          string `json:"fio" db:"fio"`
-	Contact      string `json:"contact" db:"contact"`
-	Address      string `json:"address" db:"address"`
-	DateRegister string `json:"dateRegister" db:"dateRegister"`
-	DataPay      string `json:"dataPay" db:"dataPay"`
-	Checks       bool   `json:"checks" db:"checks"`
-	CreatedAt    string `json:"created_at" db:"created_at"`
-	UpdatedAt    string `json:"updated_at" db:"updated_at"`
+	ID           int64     `json:"id"            db:"id"`
+	IDUser       int64     `json:"id_user"       db:"id_user"`
+	UserName     string    `json:"userName"      db:"userName"`
+	Quantity     *int      `json:"quantity"      db:"quantity"`
+	Parfumes     string    `json:"parfumes"      db:"parfumes"`
+	Gift         string    `json:"gift"          db:"gift"`
+	FIO          string    `json:"fio"           db:"fio"`
+	Contact      string    `json:"contact"       db:"contact"`
+	Address      string    `json:"address"       db:"address"`
+	DateRegister string    `json:"dateRegister"  db:"dateRegister"`
+	DataPay      string    `json:"dataPay"       db:"dataPay"` // ЕДИНЫЙ нейминг: DataPay
+	Checks       bool      `json:"checks"        db:"checks"`
+	CreatedAt    time.Time `json:"created_at"    db:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"    db:"updated_at"`
 }
 
-// OrderCreateRequest represents the request to create a new order
+// OrderCreateRequest — вход при создании
 type OrderCreateRequest struct {
-	IDUser       int64  `json:"id_user" validate:"required"`
-	UserName     string `json:"userName" validate:"required,min=1,max=255"`
+	IDUser       int64  `json:"id_user"      validate:"required"`
+	UserName     string `json:"userName"     validate:"required,min=1,max=255"`
 	Quantity     *int   `json:"quantity"`
 	Parfumes     string `json:"parfumes"`
 	FIO          string `json:"fio"`
-	Contact      string `json:"contact" validate:"required,min=1,max=50"`
+	Contact      string `json:"contact"      validate:"required,min=1,max=50"`
 	Address      string `json:"address"`
 	DateRegister string `json:"dateRegister"`
-	DataPay      string `json:"dataPay" validate:"required"`
+	DataPay      string `json:"dataPay"      validate:"required"`
 	Checks       bool   `json:"checks"`
 }
 
-// OrderUpdateRequest represents the request to update an existing order
+// OrderUpdateRequest — частичное обновление
 type OrderUpdateRequest struct {
-	UserName     string `json:"userName,omitempty" validate:"omitempty,min=1,max=255"`
+	UserName     string `json:"userName,omitempty"     validate:"omitempty,min=1,max=255"`
 	Quantity     *int   `json:"quantity,omitempty"`
 	Parfumes     string `json:"parfumes,omitempty"`
 	FIO          string `json:"fio,omitempty"`
-	Contact      string `json:"contact,omitempty" validate:"omitempty,min=1,max=50"`
+	Contact      string `json:"contact,omitempty"      validate:"omitempty,min=1,max=50"`
 	Address      string `json:"address,omitempty"`
 	DateRegister string `json:"dateRegister,omitempty"`
 	DataPay      string `json:"dataPay,omitempty"`
 	Checks       *bool  `json:"checks,omitempty"`
 }
 
-// OrderResponse represents the response structure for order operations
+// OrderResponse — то, что отдаём наружу
 type OrderResponse struct {
 	ID           int64  `json:"id"`
 	IDUser       int64  `json:"id_user"`
@@ -80,7 +83,7 @@ type OrderResponse struct {
 	UpdatedAt    string `json:"updated_at"`
 }
 
-// OrderStatsResponse represents order statistics
+// OrderStatsResponse — статистика по заказам
 type OrderStatsResponse struct {
 	TotalOrders     int `json:"total_orders"`
 	PendingOrders   int `json:"pending_orders"`
@@ -91,7 +94,7 @@ type OrderStatsResponse struct {
 	MonthOrders     int `json:"month_orders"`
 }
 
-// ToResponse converts Order to OrderResponse
+// ToResponse — маппинг доменной модели в внешний ответ
 func (o *Order) ToResponse() *OrderResponse {
 	return &OrderResponse{
 		ID:           o.ID,
@@ -105,12 +108,12 @@ func (o *Order) ToResponse() *OrderResponse {
 		DateRegister: o.DateRegister,
 		DataPay:      o.DataPay,
 		Checks:       o.Checks,
-		CreatedAt:    o.CreatedAt,
-		UpdatedAt:    o.UpdatedAt,
+		CreatedAt:    o.CreatedAt.Format(time.RFC3339),
+		UpdatedAt:    o.UpdatedAt.Format(time.RFC3339),
 	}
 }
 
-// FromCreateRequest creates Order from OrderCreateRequest
+// FromCreateRequest — заполнение из create-запроса
 func (o *Order) FromCreateRequest(req *OrderCreateRequest) {
 	o.IDUser = req.IDUser
 	o.UserName = req.UserName
@@ -124,7 +127,7 @@ func (o *Order) FromCreateRequest(req *OrderCreateRequest) {
 	o.Checks = req.Checks
 }
 
-// UpdateFromRequest updates Order from OrderUpdateRequest
+// UpdateFromRequest — частичное обновление из update-запроса
 func (o *Order) UpdateFromRequest(req *OrderUpdateRequest) {
 	if req.UserName != "" {
 		o.UserName = req.UserName
@@ -155,7 +158,7 @@ func (o *Order) UpdateFromRequest(req *OrderUpdateRequest) {
 	}
 }
 
-// IsValid validates the order data
+// IsValid — простая валидация доменной модели
 func (o *Order) IsValid() error {
 	if o.IDUser == 0 {
 		return fmt.Errorf("id_user is required")

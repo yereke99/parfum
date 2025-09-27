@@ -6,6 +6,9 @@
         content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>ZHAD | Сыйлық дөңгелегі</title>
 
+  <!-- Leaflet CSS for address form -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
   <style>
     :root{
       --black:#0b0b0c;
@@ -15,6 +18,9 @@
       --line:#e9e9ea;
       --gold:#d4af37;
       --gold-2:#f2d678;
+      --green:#22c55e;
+      --red:#ef4444;
+      --orange:#f97316;
       --shadow-1:0 2px 10px rgba(0,0,0,.12);
       --shadow-2:0 10px 40px rgba(0,0,0,.22);
       --shadow-3:0 20px 70px rgba(0,0,0,.28);
@@ -23,18 +29,12 @@
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
     html,body{height:100%;overflow-x:hidden}
     
-    /* ✅ Fixed: Use min-height instead of fixed height to prevent overflow */
     body{
       font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Inter,Arial,sans-serif;
       background: radial-gradient(1200px 1200px at 50% -200px,#151515 0%,#0b0b0c 55%);
       color:var(--white);
-      
-      /* Use min-height to allow content to expand if needed */
       min-height:var(--tg-viewport-stable-height,100vh);
-      
-      /* Simplified padding - removed top padding conflicts */
       padding:max(env(safe-area-inset-top), var(--tg-safe-area-inset-top, 0px), 16px) 0 max(env(safe-area-inset-bottom), var(--tg-safe-area-inset-bottom, 0px), 16px);
-      
       display:flex;
       align-items:center;
       justify-content:center;
@@ -44,12 +44,11 @@
     .wrap{
       width:min(92vw,520px);
       padding:10px 16px 28px;
-      /* Ensure wrap fits within viewport */
       max-height:100%;
       overflow-y:auto;
     }
 
-    /* Brand section - removed sticky to avoid conflicts */
+    /* Brand section */
     .brand{
       display:flex;
       align-items:center;
@@ -76,6 +75,48 @@
       padding:8px 14px;border-radius:999px;font-weight:700;font-size:12px;cursor:pointer
     }
     .lang button.active{background:#fff;color:#000}
+
+    /* Status messages */
+    .status-message {
+      background: linear-gradient(135deg, var(--orange), #ea580c);
+      color: white;
+      padding: 16px;
+      border-radius: 12px;
+      margin: 16px 0;
+      text-align: center;
+      font-weight: 600;
+      display: none;
+    }
+
+    .status-message.success {
+      background: linear-gradient(135deg, var(--green), #16a085);
+    }
+
+    .status-message.error {
+      background: linear-gradient(135deg, var(--red), #c53030);
+    }
+
+    .status-message.show {
+      display: block;
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Spins counter */
+    .spins-info {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin: 16px 0;
+      text-align: center;
+      font-size: 14px;
+      color: var(--gold);
+    }
 
     .stage{margin-top:18px;display:flex;flex-direction:column;align-items:center}
     .wheel-box{
@@ -144,14 +185,136 @@
       box-shadow:var(--shadow-2);transition:transform .12s ease, box-shadow .2s ease;
       min-width:220px;text-transform:uppercase;
     }
-    .spin:hover{transform:translateY(-1px)}
-    .spin:active{transform:translateY(0)}
-    .spin[disabled]{opacity:.65;cursor:not-allowed;position:relative}
-    .spin[disabled]::after{
+    .spin:hover:not(:disabled){transform:translateY(-1px)}
+    .spin:active:not(:disabled){transform:translateY(0)}
+    .spin:disabled{opacity:.65;cursor:not-allowed;position:relative}
+    .spin:disabled::after{
       content:'';position:absolute;inset:0;margin:auto;width:20px;height:20px;border-radius:50%;
       border:2px solid #0000;border-top-color:#000;animation:spin 1s linear infinite;
     }
     @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Prize completion form */
+    .prize-form {
+      display: none;
+      background: linear-gradient(180deg,#111214,#0b0b0c);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 22px;
+      padding: 24px;
+      margin-top: 20px;
+      max-width: 100%;
+    }
+
+    .prize-form.show {
+      display: block;
+      animation: slideUp 0.5s ease;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .form-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--gold);
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .form-subtitle {
+      color: #cfcfcf;
+      margin-bottom: 20px;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .input-group {
+      margin-bottom: 16px;
+    }
+
+    .input-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 8px;
+      color: var(--white);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input-field:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+    }
+
+    .input-field::placeholder {
+      color: var(--muted);
+    }
+
+    .address-selector {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 8px;
+      color: var(--white);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .address-selector:hover {
+      border-color: var(--gold);
+      background: rgba(255,255,255,.08);
+    }
+
+    .address-selector.selected {
+      border-color: var(--gold);
+      background: rgba(212, 175, 55, 0.1);
+    }
+
+    .submit-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--gold), var(--gold-2));
+      color: #000;
+      border: none;
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 10px;
+    }
+
+    .submit-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
 
     /* modal */
     .modal{
@@ -206,10 +369,35 @@
       position:fixed;top:-10px;width:10px;height:10px;border-radius:2px;pointer-events:none;z-index:30
     }
 
+    /* Loading overlay */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .loading-spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid rgba(255,255,255,0.2);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
     /* small screens */
     @media (max-width:480px){
       .hub{width:82px;height:82px}
       .wheel-box{width:min(90vw,420px)}
+      .wrap{padding:8px 12px 20px}
     }
   </style>
 </head>
@@ -226,6 +414,14 @@
     <h1 class="title" data-i18n="title">Сыйлық дөңгелегі</h1>
     <p class="subtitle" data-i18n="subtitle">4 сыйлықтың біріне ие болыңыз!</p>
 
+    <!-- Status messages -->
+    <div class="status-message" id="statusMessage"></div>
+
+    <!-- Spins info -->
+    <div class="spins-info" id="spinsInfo" style="display: none;">
+      Қолжетімді айналдыру: <span id="spinsCount">0</span>
+    </div>
+
     <div class="stage">
       <div class="wheel-box">
         <div class="pointer"></div>
@@ -239,6 +435,43 @@
 
       <button class="spin" id="spinBtn" data-i18n="spin">Айналдыру</button>
     </div>
+
+    <!-- Prize completion form -->
+    <div class="prize-form" id="prizeForm">
+      <h2 class="form-title">Сыйлықты алу үшін</h2>
+      <p class="form-subtitle">Жеткізу мекенжайын енгізіңіз</p>
+      
+      <form id="completionForm">
+        <input type="hidden" id="wonPrize" name="prize">
+        <input type="hidden" id="orderID" name="order_id">
+        <input type="hidden" id="telegramID" name="telegram_id">
+        <input type="hidden" id="latitude" name="latitude">
+        <input type="hidden" id="longitude" name="longitude">
+        
+        <div class="input-group">
+          <label class="input-label">Толық атыңыз</label>
+          <input type="text" class="input-field" id="fio" name="fio" placeholder="Атыңыз мен тегіңіз" required>
+        </div>
+        
+        <div class="input-group">
+          <label class="input-label">Телефон нөмірі</label>
+          <input type="tel" class="input-field" id="contact" name="contact" placeholder="+7 (___) ___-__-__" required>
+        </div>
+        
+        <div class="input-group">
+          <label class="input-label">Жеткізу мекенжайы</label>
+          <div class="address-selector" id="addressSelector" onclick="openAddressSearch()">
+            <span id="addressDisplay">Мекенжай таңдау үшін басыңыз</span>
+            <span>→</span>
+          </div>
+          <input type="hidden" id="address" name="address">
+        </div>
+        
+        <button type="submit" class="submit-btn" id="submitBtn">
+          Сыйлықты тапсырыс беру
+        </button>
+      </form>
+    </div>
   </div>
 
   <!-- Winner modal -->
@@ -249,14 +482,30 @@
       <h2 class="win-title" id="winTitle" data-i18n="congrats">Құттықтаймыз!</h2>
       <p class="win-sub" id="winText">Сіз сыйлық ұттыңыз!</p>
       <div class="pill" id="winPill"><span id="winPillText">Prize</span></div>
-      <button class="ok" id="closeModal" data-i18n="close">Жабу</button>
+      <button class="ok" id="continueBtn" data-i18n="continue">Жалғастыру</button>
     </div>
   </div>
 
+  <!-- Loading overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+  </div>
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    /* =========================
-      i18n - ✅ FIXED: Proper language for each prize
-    ========================== */
+    // Global Variables
+    let currentLang = 'kz';
+    let telegramId = null;
+    let isSpinning = false;
+    let currentRotation = 0;
+    let currentOrderId = null;
+    let currentPrize = null;
+    let availableSpins = 0;
+    let selectedLocation = null;
+    let selectedAddress = '';
+
+    // Translations
     const i18n = {
       ru:{
         title:"Колесо призов",
@@ -264,18 +513,21 @@
         spin:"Крутить",
         spinning:"Крутится...",
         congrats:"Поздравляем!",
+        continue:"Продолжить",
         close:"Закрыть",
+        noSpins:"У вас нет доступных вращений",
+        purchaseFirst:"Сначала купите парфюмы",
         prizes:{
-          parfum10:"🧪 10мл парфюм",
-          parfum30:"🧪 30мл парфюм",
+          parfum_10ml:"🧪 10мл парфюм",
+          parfum_30ml:"🧪 30мл парфюм",
           diamond_ring:"💍 Кольцо",
           money:"💵 100 000 ₸"
         },
         prizesWin:{
-          parfum10:"🧪 10мл парфюм",
-          parfum30:"🧪 30мл парфюм",
-          diamond_ring:"💍 Бриллиантовое кольцо",
-          money:"💵 100 000 тенге"
+          parfum_10ml:"10мл парфюм",
+          parfum_30ml:"30мл парфюм",
+          diamond_ring:"Бриллиантовое кольцо",
+          money:"100 000 тенге"
         }
       },
       kz:{
@@ -284,43 +536,126 @@
         spin:"Айналдыру",
         spinning:"Айналуда...",
         congrats:"Құттықтаймыз!",
+        continue:"Жалғастыру",
         close:"Жабу",
+        noSpins:"Сізде қолжетімді айналдыру жоқ",
+        purchaseFirst:"Алдымен парфюм сатып алыңыз",
         prizes:{
-          parfum10:"🧪 10мл парфюм",
-          parfum30:"🧪 30мл парфюм",
+          parfum_10ml:"🧪 10мл парфюм",
+          parfum_30ml:"🧪 30мл парфюм",
           diamond_ring:"💍 Сақина",
           money:"💵 100 000 ₸"
         },
         prizesWin:{
-          parfum10:"🧪 10мл парфюм",
-          parfum30:"🧪 30мл парфюм",
+          parfum_10ml:"10мл парфюм",
+          parfum_30ml:"30мл парфюм",
           diamond_ring:"Бриллиант сақина",
-          money:"💵 100 000 теңге"
+          money:"100 000 теңге"
         }
       }
     };
-    let lang = "kz";
 
-    /* =========================
-      Prize model (colors + icon type + emoji)
-    ========================== */
+    // Prize configuration (matches backend logic)
     const PRIZES = [
-      { id:"parfum10",     bg:"#111214", fg:"#ffffff", accent:"#f2f2f2", icon:"bottle10", emoji:"🌸" },
+      { id:"parfum_10ml",     bg:"#111214", fg:"#ffffff", accent:"#f2f2f2", icon:"bottle10", emoji:"🌸" },
       { id:"diamond_ring", bg:"#000000", fg:"#ffffff", accent:"#d4af37", icon:"ring",     emoji:"💍" },
-      { id:"parfum30",     bg:"#1a1b1e", fg:"#ffffff", accent:"#e6e6e6", icon:"bottle30", emoji:"🌸" },
+      { id:"parfum_30ml",     bg:"#1a1b1e", fg:"#ffffff", accent:"#e6e6e6", icon:"bottle30", emoji:"🌸" },
       { id:"money",        bg:"#000000", fg:"#ffffff", accent:"#f2d678", icon:"money",    emoji:"💰" }
     ];
 
-    const wheel   = document.getElementById('wheel');
+    const wheel = document.getElementById('wheel');
     const spinBtn = document.getElementById('spinBtn');
 
-    let isSpinning = false;
-    let currentRotation = 0;
+    // Initialize Telegram WebApp
+    function initTelegramWebApp() {
+      console.log('🚀 Initializing ZHAD Prize Wheel...');
+      
+      if (!window.Telegram || !Telegram.WebApp) {
+        console.warn('⚠️ Telegram WebApp not available');
+        return false;
+      }
 
-    /* =========================
-      Build premium-looking slices with SVG
-    ========================== */
-    function buildWheel(){
+      try {
+        Telegram.WebApp.ready();
+        Telegram.WebApp.expand();
+        
+        if (Telegram.WebApp.initDataUnsafe?.user) {
+          telegramId = Telegram.WebApp.initDataUnsafe.user.id;
+          document.getElementById('telegramID').value = telegramId;
+          console.log('📱 Telegram User ID:', telegramId);
+        }
+
+        try {
+          Telegram.WebApp.setHeaderColor('#0b0b0c');
+          Telegram.WebApp.setBackgroundColor('#0b0b0c');
+        } catch (_) {}
+
+        updateViewportHeight();
+        Telegram.WebApp.onEvent('viewportChanged', updateViewportHeight);
+
+        return true;
+      } catch (error) {
+        console.error('❌ Error initializing Telegram WebApp:', error);
+        return false;
+      }
+    }
+
+    // Update viewport height
+    function updateViewportHeight() {
+      let vh = window.innerHeight;
+      if (window.Telegram && Telegram.WebApp) {
+        vh = Telegram.WebApp.viewportStableHeight || window.innerHeight;
+      }
+      document.documentElement.style.setProperty('--tg-viewport-stable-height', `${vh}px`);
+      document.body.style.minHeight = `${vh}px`;
+    }
+
+    // Check spin eligibility
+    async function checkSpinEligibility() {
+      if (!telegramId) {
+        showStatus('error', i18n[currentLang].purchaseFirst);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/prize/eligibility?telegram_id=${telegramId}`);
+        const data = await response.json();
+
+        if (data.success) {
+          availableSpins = data.spins_available;
+          
+          if (availableSpins > 0) {
+            document.getElementById('spinsInfo').style.display = 'block';
+            document.getElementById('spinsCount').textContent = availableSpins;
+            spinBtn.disabled = false;
+          } else {
+            showStatus('error', i18n[currentLang].noSpins);
+            spinBtn.disabled = true;
+          }
+        } else {
+          showStatus('error', 'Қате орын алды');
+          spinBtn.disabled = true;
+        }
+      } catch (error) {
+        console.error('Error checking eligibility:', error);
+        showStatus('error', 'Сервермен байланыс қатесі');
+        spinBtn.disabled = true;
+      }
+    }
+
+    // Show status message
+    function showStatus(type, message) {
+      const statusEl = document.getElementById('statusMessage');
+      statusEl.className = `status-message ${type} show`;
+      statusEl.textContent = message;
+      
+      setTimeout(() => {
+        statusEl.classList.remove('show');
+      }, 5000);
+    }
+
+    // Build wheel with prizes
+    function buildWheel() {
       const slices = PRIZES.length;
       const center = 200, R = 190, rIcon = 115;
 
@@ -336,7 +671,7 @@
         const x1 = center + R*Math.cos(rad(a1));
         const y1 = center + R*Math.sin(rad(a1));
 
-        // segment
+        // Segment
         const path = document.createElementNS("http://www.w3.org/2000/svg","path");
         path.setAttribute("d", `M ${center} ${center} L ${x0} ${y0} A ${R} ${R} 0 ${largeArc} 1 ${x1} ${y1} Z`);
         path.setAttribute("fill", p.bg);
@@ -344,14 +679,14 @@
         path.setAttribute("stroke-width", "1");
         wheel.appendChild(path);
 
-        // subtle gloss
+        // Gloss effect
         const gloss = document.createElementNS("http://www.w3.org/2000/svg","path");
         gloss.setAttribute("d", `M ${center} ${center} L ${x0} ${y0} A ${R} ${R} 0 ${largeArc} 1 ${x1} ${y1} Z`);
         gloss.setAttribute("fill", "url(#gloss)");
         gloss.setAttribute("opacity", ".18");
         wheel.appendChild(gloss);
 
-        // icon + label group
+        // Icon and label
         const mid = a0 + (a1-a0)/2;
         const ix = center + rIcon*Math.cos(rad(mid));
         const iy = center + rIcon*Math.sin(rad(mid));
@@ -360,7 +695,7 @@
         g.setAttribute("transform", `translate(${ix},${iy}) rotate(${mid+90})`);
         wheel.appendChild(g);
 
-        // logo plate
+        // Logo plate
         const plate = document.createElementNS("http://www.w3.org/2000/svg","rect");
         plate.setAttribute("x", -28); plate.setAttribute("y", -28);
         plate.setAttribute("width", 56); plate.setAttribute("height", 56);
@@ -370,10 +705,10 @@
         plate.setAttribute("stroke-width", "1.5");
         g.appendChild(plate);
 
-        // logo icon
+        // Icon
         g.appendChild(makeIcon(p.icon, p.fg, p.accent));
 
-        // label (below plate)
+        // Label
         const label = document.createElementNS("http://www.w3.org/2000/svg","text");
         label.setAttribute("x", 0);
         label.setAttribute("y", 44);
@@ -381,11 +716,11 @@
         label.setAttribute("font-size", "12");
         label.setAttribute("font-weight", "900");
         label.setAttribute("fill", "#e9e9ea");
-        label.textContent = i18n[lang].prizes[p.id];
+        label.textContent = i18n[currentLang].prizes[p.id];
         g.appendChild(label);
       });
 
-      // defs for gloss
+      // Add defs for gradient
       const defs = document.createElementNS("http://www.w3.org/2000/svg","defs");
       const lg = document.createElementNS("http://www.w3.org/2000/svg","linearGradient");
       lg.setAttribute("id","gloss");
@@ -400,43 +735,41 @@
       wheel.appendChild(defs);
     }
 
-    function rad(deg){return deg*Math.PI/180}
+    function rad(deg) { return deg * Math.PI / 180; }
 
-    /* =========================
-      Icons (wheel + win modal share this)
-    ========================== */
-    function makeIcon(kind, color="#fff", accent="#d4af37"){
+    // Make SVG icons
+    function makeIcon(kind, color="#fff", accent="#d4af37") {
       const g = document.createElementNS("http://www.w3.org/2000/svg","g");
       if(kind.includes("bottle")){
-        // bottle base
+        // Bottle base
         const rect = document.createElementNS("http://www.w3.org/2000/svg","rect");
         rect.setAttribute("x",-14); rect.setAttribute("y",-8); rect.setAttribute("width",28); rect.setAttribute("height",24);
         rect.setAttribute("rx",4); rect.setAttribute("fill", color);
         g.appendChild(rect);
-        // neck
+        // Neck
         const neck = document.createElementNS("http://www.w3.org/2000/svg","rect");
         neck.setAttribute("x",-6); neck.setAttribute("y",-16); neck.setAttribute("width",12); neck.setAttribute("height",8);
         neck.setAttribute("rx",2); neck.setAttribute("fill", color);
         g.appendChild(neck);
-        // cap
+        // Cap
         const cap = document.createElementNS("http://www.w3.org/2000/svg","rect");
         cap.setAttribute("x",-10); cap.setAttribute("y",-22); cap.setAttribute("width",20); cap.setAttribute("height",6);
         cap.setAttribute("rx",3); cap.setAttribute("fill", color);
         g.appendChild(cap);
-        // label
+        // Label
         const label = document.createElementNS("http://www.w3.org/2000/svg","rect");
         label.setAttribute("x",-9); label.setAttribute("y",-1); label.setAttribute("width",18); label.setAttribute("height",12);
         label.setAttribute("rx",2); label.setAttribute("fill","#0f1013");
         label.setAttribute("stroke",accent); label.setAttribute("stroke-width","1.2");
         g.appendChild(label);
-        // ml text
+        // ML text
         const t = document.createElementNS("http://www.w3.org/2000/svg","text");
         t.setAttribute("x",0); t.setAttribute("y",8); t.setAttribute("text-anchor","middle");
         t.setAttribute("font-size","8"); t.setAttribute("font-weight","900"); t.setAttribute("fill",accent);
         t.textContent = kind === "bottle10" ? "10ml" : "30ml";
         g.appendChild(t);
       } else if(kind==="ring"){
-        // diamond ring (обруч + камень)
+        // Ring
         const ring = document.createElementNS("http://www.w3.org/2000/svg","circle");
         ring.setAttribute("cx","0"); ring.setAttribute("cy","8"); ring.setAttribute("r","14");
         ring.setAttribute("fill","#121214");
@@ -467,7 +800,99 @@
       return g;
     }
 
-    function makeSVGIcon(kind, color, accent){
+    // Spin wheel
+    async function spin() {
+      if (isSpinning || !telegramId || availableSpins <= 0) return;
+
+      isSpinning = true;
+      spinBtn.disabled = true;
+      spinBtn.textContent = i18n[currentLang].spinning;
+
+      try {
+        const response = await fetch('/api/prize/spin', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            telegram_id: telegramId
+          }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          currentPrize = result.prize_won;
+          currentOrderId = result.order_id;
+          availableSpins = result.spins_left;
+
+          // Find prize index for wheel animation
+          const prizeIndex = PRIZES.findIndex(p => p.id === currentPrize);
+          
+          // Calculate rotation to land on the prize
+          const slice = 360 / PRIZES.length;
+          const targetFromTop = (prizeIndex * slice) + slice/2;
+          const base = 360 * (6 + Math.floor(Math.random()*3)); // 6-8 full spins
+          const final = base + (360 - targetFromTop);
+
+          currentRotation += final;
+
+          // Animate wheel
+          wheel.style.transition = 'transform 0.6s cubic-bezier(.25,.46,.45,.94)';
+          wheel.style.transform = `rotate(${currentRotation - final*0.7}deg)`;
+          
+          setTimeout(() => {
+            wheel.style.transition = 'transform 6.5s cubic-bezier(.17,.67,.12,.99)';
+            wheel.style.transform = `rotate(${currentRotation}deg)`;
+          }, 80);
+
+          // Show result after animation
+          setTimeout(() => {
+            showWin(currentPrize);
+            isSpinning = false;
+            spinBtn.disabled = availableSpins <= 0;
+            spinBtn.textContent = i18n[currentLang].spin;
+            
+            // Update spins counter
+            document.getElementById('spinsCount').textContent = availableSpins;
+            if (availableSpins <= 0) {
+              document.getElementById('spinsInfo').style.display = 'none';
+            }
+          }, 7000);
+
+        } else {
+          throw new Error(result.message || 'Spin failed');
+        }
+      } catch (error) {
+        console.error('Spin error:', error);
+        showStatus('error', 'Айналдыру қатесі: ' + error.message);
+        isSpinning = false;
+        spinBtn.disabled = false;
+        spinBtn.textContent = i18n[currentLang].spin;
+      }
+    }
+
+    // Show win modal
+    function showWin(prize) {
+      const prizeData = PRIZES.find(p => p.id === prize);
+      if (!prizeData) return;
+
+      const label = i18n[currentLang].prizes[prize];
+
+      // Set icon
+      const winIcon = document.getElementById('winIcon');
+      winIcon.innerHTML = "";
+      winIcon.appendChild(makeSVGIcon(prizeData.icon, "#000", prizeData.accent));
+
+      document.getElementById('winTitle').textContent = i18n[currentLang].congrats;
+      document.getElementById('winText').textContent = (currentLang === 'kz' ? "Сіз ұттыңыз: " : "Вы выиграли: ") + label + "!";
+      document.getElementById('winPillText').textContent = label;
+
+      document.getElementById('winModal').classList.add('show');
+      burstConfetti(prizeData.accent);
+    }
+
+    function makeSVGIcon(kind, color, accent) {
       const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
       svg.setAttribute("viewBox","-32 -32 64 64");
       svg.setAttribute("aria-hidden","true");
@@ -475,71 +900,74 @@
       return svg;
     }
 
-    /* =========================
-      Spin logic (deterministic winner, premium easing)
-    ========================== */
-    function spin(){
-      if(isSpinning) return;
-      isSpinning = true;
-      spinBtn.disabled = true;
-      spinBtn.textContent = i18n[lang].spinning;
-
-      // pick a winner index
-      const idx = Math.floor(Math.random() * PRIZES.length);
-
-      // slice angle and target angle so pointer (top) hits center of winning slice
-      const slice = 360 / PRIZES.length;
-      const targetFromTop = (idx * slice) + slice/2;  // degrees clockwise from 0
-      const base = 360 * (6 + Math.floor(Math.random()*3)); // full spins 6..8
-      const final = base + (360 - targetFromTop);
-
-      currentRotation += final;
-
-      // nice multi-phase feel: quick accel then long ease
-      wheel.style.transition = 'transform 0.6s cubic-bezier(.25,.46,.45,.94)';
-      wheel.style.transform = `rotate(${currentRotation - final*0.7}deg)`;
-      setTimeout(()=>{
-        wheel.style.transition = 'transform 6.5s cubic-bezier(.17,.67,.12,.99)';
-        wheel.style.transform = `rotate(${currentRotation}deg)`;
-      }, 80);
-
-      // announce winner near end
-      setTimeout(()=>{
-        const prize = PRIZES[idx];
-        showWin(prize);
-        isSpinning = false;
-        spinBtn.disabled = false;
-        spinBtn.textContent = i18n[lang].spin;
-      }, 7000 + 350); // align with animation
+    // Continue to address form
+    function continueToForm() {
+      document.getElementById('winModal').classList.remove('show');
+      document.getElementById('wonPrize').value = currentPrize;
+      document.getElementById('orderID').value = currentOrderId;
+      document.getElementById('prizeForm').classList.add('show');
     }
 
-    /* =========================
-      Winner modal + confetti
-    ========================== */
-    const winModal = document.getElementById('winModal');
-    const winIcon  = document.getElementById('winIcon');
-    const winText  = document.getElementById('winText');
-    const winPill  = document.getElementById('winPillText');
-    document.getElementById('closeModal').addEventListener('click', ()=> winModal.classList.remove('show'));
-    winModal.addEventListener('click', (e)=>{ if(e.target === winModal) winModal.classList.remove('show'); });
+    // Complete prize order
+    async function completePrize(event) {
+      event.preventDefault();
+      
+      const formData = new FormData(event.target);
+      
+      // Validate required fields
+      const required = ['fio', 'contact', 'address'];
+      for (const field of required) {
+        if (!formData.get(field)) {
+          showStatus('error', 'Барлық өрістерді толтырыңыз');
+          return;
+        }
+      }
 
-    function showWin(prize){
-      const label = i18n[lang].prizes[prize.id];
+      document.getElementById('loadingOverlay').style.display = 'flex';
 
-      // set proper SVG logo for the won prize
-      winIcon.innerHTML = ""; // clear
-      winIcon.appendChild(makeSVGIcon(prize.icon, "#000", prize.accent));
+      try {
+        const response = await fetch('/api/prize/complete', {
+          method: 'POST',
+          body: formData
+        });
 
-      document.querySelector('[data-i18n="congrats"]').textContent = i18n[lang].congrats;
-      winText.textContent = (lang==="kz" ? "Сіз ұттыңыз: " : "Вы выиграли: ") + label + "!";
-      winPill.textContent = label;
+        const result = await response.json();
 
-      winModal.classList.add('show');
-      burstConfetti();
+        if (result.success) {
+          showStatus('success', 'Сыйлық тапсырысы сәтті жасалды! 🎉');
+          
+          // Reset form and hide it
+          document.getElementById('prizeForm').classList.remove('show');
+          document.getElementById('completionForm').reset();
+          
+          // Show success message via Telegram
+          if (window.Telegram && Telegram.WebApp) {
+            Telegram.WebApp.showAlert('Сыйлық тапсырысы сәтті жасалды! Менеджер сізбен байланысады.');
+          }
+        } else {
+          throw new Error(result.message || 'Order completion failed');
+        }
+      } catch (error) {
+        console.error('Order completion error:', error);
+        showStatus('error', 'Тапсырыс қатесі: ' + error.message);
+      } finally {
+        document.getElementById('loadingOverlay').style.display = 'none';
+      }
     }
 
-    function burstConfetti(prizeAccent = '#d4af37'){
-      // ✅ Match confetti colors to prize accent
+    // Address selection (simplified for now)
+    function openAddressSearch() {
+      const address = prompt('Мекенжайыңызды енгізіңіз:');
+      if (address && address.trim()) {
+        selectedAddress = address.trim();
+        document.getElementById('addressDisplay').textContent = selectedAddress;
+        document.getElementById('address').value = selectedAddress;
+        document.getElementById('addressSelector').classList.add('selected');
+      }
+    }
+
+    // Confetti effect
+    function burstConfetti(prizeAccent = '#d4af37') {
       const cols = ['#ffffff','#f2f2f2','#bdbdbd', prizeAccent, '#0b0b0c'];
       const N = 140;
       for(let i=0;i<N;i++){
@@ -560,63 +988,57 @@
       }
     }
 
-    /* =========================
-      Language switch
-    ========================== */
+    // Language switch
     document.querySelectorAll('.lang-btn').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
         btn.classList.add('active');
-        lang = btn.dataset.lang;
+        currentLang = btn.dataset.lang;
         applyI18n();
         buildWheel();
       });
     });
 
     function applyI18n(){
-      document.querySelector('[data-i18n="title"]').textContent = i18n[lang].title;
-      document.querySelector('[data-i18n="subtitle"]').textContent = i18n[lang].subtitle;
-      document.querySelector('[data-i18n="spin"]').textContent = i18n[lang].spin;
-      document.querySelector('[data-i18n="close"]').textContent = i18n[lang].close;
-      document.querySelector('[data-i18n="congrats"]').textContent = i18n[lang].congrats;
+      document.querySelector('[data-i18n="title"]').textContent = i18n[currentLang].title;
+      document.querySelector('[data-i18n="subtitle"]').textContent = i18n[currentLang].subtitle;
+      document.querySelector('[data-i18n="spin"]').textContent = i18n[currentLang].spin;
+      document.querySelector('[data-i18n="continue"]').textContent = i18n[currentLang].continue;
+      document.querySelector('[data-i18n="congrats"]').textContent = i18n[currentLang].congrats;
     }
 
-    /* =========================
-      Telegram WebApp safe viewport - ✅ FIXED viewport handling
-    ========================== */
-    if(window.Telegram && Telegram.WebApp){
-      const tg = Telegram.WebApp;
-      tg.ready(); 
-      tg.expand();
-      
-      try {
-        tg.setHeaderColor('#0b0b0c'); 
-        tg.setBackgroundColor('#0b0b0c');
-      } catch(e) {}
-      
-      // Update height on viewport changes
-      function updateHeight() {
-        const vh = tg.viewportStableHeight || window.innerHeight;
-        document.documentElement.style.setProperty('--tg-viewport-stable-height', `${vh}px`);
-        document.body.style.minHeight = `${vh}px`;
-      }
-      
-      updateHeight();
-      tg.onEvent('viewportChanged', updateHeight);
-    }
-
-    /* =========================
-      Bind + init
-    ========================== */
+    // Event listeners
     spinBtn.addEventListener('click', spin);
-    applyI18n();
-    buildWheel();
+    document.getElementById('continueBtn').addEventListener('click', continueToForm);
+    document.getElementById('completionForm').addEventListener('submit', completePrize);
 
-    // helpers
-    document.addEventListener('contextmenu', e=>e.preventDefault(), {passive:false});
-    let lastTouchEnd=0;
+    // Initialize app
+    async function init() {
+      console.log('🚀 Initializing ZHAD Prize Wheel...');
+      
+      initTelegramWebApp();
+      applyI18n();
+      buildWheel();
+      
+      // Check user eligibility
+      await checkSpinEligibility();
+      
+      console.log('✅ Prize wheel ready!');
+    }
+
+    // Start app
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+
+    // Prevent double-tap zoom
+    let lastTouchEnd = 0;
     document.addEventListener('touchend', e=>{
-      const now=Date.now(); if(now-lastTouchEnd<=300) e.preventDefault(); lastTouchEnd=now;
+      const now = Date.now(); 
+      if(now - lastTouchEnd <= 300) e.preventDefault(); 
+      lastTouchEnd = now;
     }, {passive:false});
   </script>
 </body>

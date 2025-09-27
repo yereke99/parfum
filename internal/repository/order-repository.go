@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"parfum/internal/domain"
 	"time"
+	"fmt"
 )
 
 type OrderRepository struct {
@@ -12,6 +13,189 @@ type OrderRepository struct {
 
 func NewOrderRepository(db *sql.DB) *OrderRepository {
 	return &OrderRepository{db: db}
+}
+
+
+// GetOrderSequenceNumber gets the sequence number of an order for prize determination
+func (r *OrderRepository) GetOrderSequenceNumber(orderID int64) (int, error) {
+	query := `
+		SELECT COUNT(*) + 1 
+		FROM orders 
+		WHERE id < ? AND parfumes IS NOT NULL AND parfumes != ''
+	`
+	
+	var sequence int
+	err := r.db.QueryRow(query, orderID).Scan(&sequence)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get order sequence: %w", err)
+	}
+	
+	return sequence, nil
+}
+
+// UpdateOrderPrize updates an order with the won prize
+func (r *OrderRepository) UpdateOrderPrize(orderID int64, prize string) error {
+	query := `
+		UPDATE orders 
+		SET gift = ?, updated_at = CURRENT_TIMESTAMP 
+		WHERE id = ?
+	`
+	
+	result, err := r.db.Exec(query, prize, orderID)
+	if err != nil {
+		return fmt.Errorf("failed to update order prize: %w", err)
+	}
+	
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get affected rows: %w", err)
+	}
+	
+	if rowsAffected == 0 {
+		return fmt.Errorf("no order found with id %d", orderID)
+	}
+	
+	return nil
+}
+
+// MarkOrderAsCompleted marks an order as completed (checks = true)
+func (r *OrderRepository) MarkOrderAsCompleted(orderID int64) error {
+	query := `
+		UPDATE orders 
+		SET checks = true, updated_at = CURRENT_TIMESTAMP 
+		WHERE id = ?
+	`
+	
+	result, err := r.db.Exec(query, orderID)
+	if err != nil {
+		return fmt.Errorf("failed to mark order as completed: %w", err)
+	}
+	
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get affected rows: %w", err)
+	}
+	
+	if rowsAffected == 0 {
+		return fmt.Errorf("no order found with id %d", orderID)
+	}
+	
+	return nil
+}
+
+// GetOrdersWithPrizes gets all orders that have prizes assigned
+func (r *OrderRepository) GetOrdersWithPrizes() ([]domain.Order, error) {
+	query := `
+		SELECT id, id_user, userName, quantity, parfumes, gift, fio, contact, 
+		       address, dateRegister, dataPay, checks, created_at, updated_at
+		FROM orders 
+		WHERE gift IS NOT NULL AND gift != '' AND gift != 'null'
+		ORDER BY created_at DESC
+	`
+	
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query orders with prizes: %w", err)
+	}
+	defer rows.Close()
+	
+	var orders []domain.Order
+	for rows.Next() {
+		var order domain.Order
+		err := rows.Scan(
+			&order.ID, &order.ID_user, &order.UserName, &order.Quantity, 
+			&order.Parfumes, &order.Gift, &order.FIO, &order.Contact,
+			&order.Address, &order.DateRegister, &order.DatePay, 
+			&order.Checks, &order.CreatedAt, &order.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan order: %w", err)
+		}
+		orders = append(orders, order)
+	}
+	
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("row iteration error: %w", err)
+	}
+	
+	return orders, nil
+}
+
+// GetPrizeStatistics gets statistics about prize distribution
+func (r *OrderRepository) GetPrizeStatistics() (map[string]int, error) {
+	query := `
+		SELECT 
+			gift,
+			COUNT(*) as count
+		FROM orders 
+		WHERE gift IS NOT NULL AND gift != '' AND gift != 'null'
+		GROUP BY gift
+		ORDER BY count DESC
+	`
+	
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query prize statistics: %w", err)
+	}
+	defer rows.Close()
+	
+	stats := make(map[string]int)
+	for rows.Next() {
+		var gift string
+		var count int
+		err := rows.Scan(&gift, &count)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan prize stat: %w", err)
+		}
+		stats[gift] = count
+	}
+	
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("row iteration error: %w", err)
+	}
+	
+	return stats, nil
+}
+
+// GetOrdersEligibleForPrize gets orders that are eligible for prize wheel
+func (r *OrderRepository) GetOrdersEligibleForPrize(telegramID int64) ([]domain.Order, error) {
+	query := `
+		SELECT id, id_user, userName, quantity, parfumes, gift, fio, contact, 
+		       address, dateRegister, dataPay, checks, created_at, updated_at
+		FROM orders 
+		WHERE id_user = ? 
+		  AND parfumes IS NOT NULL 
+		  AND parfumes != ''
+		  AND (gift IS NULL OR gift = '' OR gift = 'null')
+		ORDER BY created_at ASC
+	`
+	
+	rows, err := r.db.Query(query, telegramID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query eligible orders: %w", err)
+	}
+	defer rows.Close()
+	
+	var orders []domain.Order
+	for rows.Next() {
+		var order domain.Order
+		err := rows.Scan(
+			&order.ID, &order.ID_user, &order.UserName, &order.Quantity, 
+			&order.Parfumes, &order.Gift, &order.FIO, &order.Contact,
+			&order.Address, &order.DateRegister, &order.DatePay, 
+			&order.Checks, &order.CreatedAt, &order.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan order: %w", err)
+		}
+		orders = append(orders, order)
+	}
+	
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("row iteration error: %w", err)
+	}
+	
+	return orders, nil
 }
 
 // Create creates a new order

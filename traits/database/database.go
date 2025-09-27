@@ -100,6 +100,7 @@ func CreateOrderTable(db *sql.DB) error {
 		fio TEXT NULL,
 		contact VARCHAR(50) NOT NULL,
 		address TEXT NULL,
+		gift TEXT NULL,
 		dateRegister VARCHAR(50) NULL,
 		dataPay VARCHAR(50) NOT NULL,
 		checks BOOLEAN DEFAULT FALSE,
@@ -109,7 +110,7 @@ func CreateOrderTable(db *sql.DB) error {
 	
 	CREATE INDEX IF NOT EXISTS idx_orders_id_user ON orders(id_user);
 	CREATE INDEX IF NOT EXISTS idx_orders_checks ON orders(checks);
-	CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
+	CREATE INDEX IF NOT EXISTS idxB1Za5f6a7v_orders_created_at ON orders(created_at);
 	`
 	_, err := db.Exec(stmt)
 	return err

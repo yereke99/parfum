@@ -76,6 +76,40 @@ type CartItem struct {
 	Quantity int    `json:"quantity"`
 }
 
+
+// Prize types
+const (
+	Prize10ML    = "parfum_10ml"
+	Prize30ML    = "parfum_30ml" 
+	PrizeDiamond = "diamond_ring"
+	PrizeMoney   = "money"
+)
+
+// Prize wheel spin request/response
+type SpinWheelRequest struct {
+	TelegramID int64 `json:"telegram_id"`
+}
+
+type SpinWheelResponse struct {
+	Success   bool   `json:"success"`
+	CanSpin   bool   `json:"can_spin"`
+	PrizeWon  string `json:"prize_won,omitempty"`
+	Message   string `json:"message"`
+	OrderID   int64  `json:"order_id,omitempty"`
+	SpinsLeft int    `json:"spins_left"`
+}
+
+// Prize completion request
+type CompletePrizeRequest struct {
+	TelegramID int64  `json:"telegram_id"`
+	OrderID    int64  `json:"order_id"`
+	FIO        string `json:"fio"`
+	Contact    string `json:"contact"`
+	Address    string `json:"address"`
+	Latitude   string `json:"latitude"`
+	Longitude  string `json:"longitude"`
+}
+
 func NewHandler(cfg *config.Config, zapLogger *zap.Logger, ctx context.Context, db *sql.DB, redisClient *redis.Client) *Handler {
 	h := &Handler{
 		cfg:         cfg,
@@ -88,6 +122,383 @@ func NewHandler(cfg *config.Config, zapLogger *zap.Logger, ctx context.Context, 
 	}
 
 	return h
+}
+
+
+// Deterministic prize algorithm based on order sequence number
+func (h *Handler) DeterminePrize(orderSequence int) string {
+	// Every 200th order gets money (highest priority)
+	if orderSequence%200 == 0 {
+		return PrizeMoney
+	}
+
+	// Diamond rings: try to place at multiples of 100, with collision handling
+	// We want 10 diamonds in first 1000 orders (1% rate)
+	if orderSequence%100 == 0 {
+		// This should be a diamond position, but check if it conflicts with money
+		if orderSequence%200 != 0 {
+			return PrizeDiamond
+		}
+	}
+
+	// Handle diamond shifting for collision cases
+	// If we're at a diamond position that conflicts with money,
+	// we need to shift diamonds to nearby positions
+	diamondPositions := []int{50, 150, 250, 350, 450, 550, 650, 750, 850, 950}
+	for _, pos := range diamondPositions {
+		if orderSequence == pos {
+			return PrizeDiamond
+		}
+	}
+
+	// Every 30th order gets 30ml (if not already taken by higher priority)
+	if orderSequence%30 == 0 {
+		// Check if this position is not taken by money or diamond
+		if orderSequence%200 != 0 && orderSequence%100 != 0 {
+			isDiamondPosition := false
+			for _, pos := range diamondPositions {
+				if orderSequence == pos {
+					isDiamondPosition = true
+					break
+				}
+			}
+			if !isDiamondPosition {
+				return Prize30ML
+			}
+		}
+	}
+
+	// All remaining orders get 10ml (should be ~90%)
+	return Prize10ML
+}
+
+// Check if user can spin the wheel
+func (h *Handler) CheckSpinEligibility(w http.ResponseWriter, r *http.Request) {
+	h.setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	telegramIDStr := r.URL.Query().Get("telegram_id")
+	if telegramIDStr == "" {
+		http.Error(w, "telegram_id parameter required", http.StatusBadRequest)
+		return
+	}
+
+	telegramID, err := strconv.ParseInt(telegramIDStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid telegram_id", http.StatusBadRequest)
+		return
+	}
+
+	// Get user's orders that are paid but not yet completed with prizes
+	orders, err := h.orderRepo.GetUnpaidOrdersByUser(telegramID)
+	if err != nil {
+		h.logger.Error("Error getting user orders", zap.Error(err))
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+
+	availableSpins := 0
+	var eligibleOrders []map[string]interface{}
+
+	for _, order := range orders {
+		// Count orders that have perfume selections but no prize yet
+		if order.Parfumes != "" && (order.Gift == "" || order.Gift == "null") {
+			availableSpins++
+			eligibleOrders = append(eligibleOrders, map[string]interface{}{
+				"id":         order.ID,
+				"quantity":   order.Quantity,
+				"parfumes":   order.Parfumes,
+				"created_at": order.CreatedAt,
+			})
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success":         true,
+		"can_spin":        availableSpins > 0,
+		"spins_available": availableSpins,
+		"eligible_orders": eligibleOrders,
+	})
+}
+
+// Spin the wheel and determine prize
+func (h *Handler) SpinWheel(w http.ResponseWriter, r *http.Request) {
+	h.setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req SpinWheelRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	if req.TelegramID == 0 {
+		http.Error(w, "telegram_id required", http.StatusBadRequest)
+		return
+	}
+
+	// Get user's eligible orders (paid, with perfumes, but no prize yet)
+	orders, err := h.orderRepo.GetUnpaidOrdersByUser(req.TelegramID)
+	if err != nil {
+		h.logger.Error("Error getting user orders", zap.Error(err))
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+
+	var eligibleOrder *repository.Order
+	for _, order := range orders {
+		if order.Parfumes != "" && (order.Gift == "" || order.Gift == "null") {
+			eligibleOrder = &order
+			break
+		}
+	}
+
+	if eligibleOrder == nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(SpinWheelResponse{
+			Success: false,
+			CanSpin: false,
+			Message: "No eligible orders for spinning",
+		})
+		return
+	}
+
+	// Get global order sequence number for deterministic prize
+	orderSequence, err := h.orderRepo.GetOrderSequenceNumber(eligibleOrder.ID)
+	if err != nil {
+		h.logger.Error("Error getting order sequence", zap.Error(err))
+		// Fallback to order ID if sequence lookup fails
+		orderSequence = int(eligibleOrder.ID)
+	}
+
+	// Determine prize using our algorithm
+	prizeWon := h.DeterminePrize(orderSequence)
+
+	// Save the prize to the order
+	err = h.orderRepo.UpdateOrderPrize(eligibleOrder.ID, prizeWon)
+	if err != nil {
+		h.logger.Error("Error saving prize to order", zap.Error(err))
+		http.Error(w, "Error saving prize", http.StatusInternalServerError)
+		return
+	}
+
+	// Count remaining spins
+	remainingSpins := 0
+	for _, order := range orders {
+		if order.ID != eligibleOrder.ID && order.Parfumes != "" && (order.Gift == "" || order.Gift == "null") {
+			remainingSpins++
+		}
+	}
+
+	h.logger.Info("Prize wheel spin completed",
+		zap.Int64("telegram_id", req.TelegramID),
+		zap.Int64("order_id", eligibleOrder.ID),
+		zap.Int("order_sequence", orderSequence),
+		zap.String("prize_won", prizeWon),
+		zap.Int("remaining_spins", remainingSpins))
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(SpinWheelResponse{
+		Success:   true,
+		CanSpin:   true,
+		PrizeWon:  prizeWon,
+		OrderID:   eligibleOrder.ID,
+		SpinsLeft: remainingSpins,
+		Message:   "Prize determined successfully",
+	})
+}
+
+// Complete prize order with address information
+func (h *Handler) CompletePrizeOrder(w http.ResponseWriter, r *http.Request) {
+	h.setCORSHeaders(w)
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	err := r.ParseMultipartForm(10 << 20)
+	if err != nil {
+		http.Error(w, "Error parsing form", http.StatusBadRequest)
+		return
+	}
+
+	telegramIDStr := r.FormValue("telegram_id")
+	orderIDStr := r.FormValue("order_id")
+	fio := r.FormValue("fio")
+	contact := r.FormValue("contact")
+	address := r.FormValue("address")
+	latitudeStr := r.FormValue("latitude")
+	longitudeStr := r.FormValue("longitude")
+
+	if telegramIDStr == "" || orderIDStr == "" || fio == "" || contact == "" || address == "" {
+		http.Error(w, "Required fields missing", http.StatusBadRequest)
+		return
+	}
+
+	telegramID, err := strconv.ParseInt(telegramIDStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid telegram_id", http.StatusBadRequest)
+		return
+	}
+
+	orderID, err := strconv.ParseInt(orderIDStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid order_id", http.StatusBadRequest)
+		return
+	}
+
+	// Get the order to verify it belongs to the user and has a prize
+	order, err := h.orderRepo.GetByID(orderID)
+	if err != nil {
+		h.logger.Error("Error getting order", zap.Error(err))
+		http.Error(w, "Order not found", http.StatusNotFound)
+		return
+	}
+
+	if order.ID_user != telegramID {
+		http.Error(w, "Order does not belong to user", http.StatusForbidden)
+		return
+	}
+
+	if order.Gift == "" || order.Gift == "null" {
+		http.Error(w, "Order has no prize assigned", http.StatusBadRequest)
+		return
+	}
+
+	// Update the order with client information
+	err = h.orderRepo.UpdateClientInfoWithCoordinates(orderID, fio, contact, address)
+	if err != nil {
+		h.logger.Error("Error updating order with client info", zap.Error(err))
+		http.Error(w, "Error saving client information", http.StatusInternalServerError)
+		return
+	}
+
+	// Mark order as completed
+	err = h.orderRepo.MarkOrderAsCompleted(orderID)
+	if err != nil {
+		h.logger.Error("Error marking order as completed", zap.Error(err))
+		// Don't fail the request, just log the error
+	}
+
+	// Send confirmation messages
+	go h.sendPrizeCompletionMessages(telegramID, orderID, order.UserName, order.Gift, order.Parfumes, fio, contact, address)
+
+	h.logger.Info("Prize order completed",
+		zap.Int64("telegram_id", telegramID),
+		zap.Int64("order_id", orderID),
+		zap.String("prize", order.Gift),
+		zap.String("fio", fio),
+		zap.String("contact", contact),
+		zap.String("address", address))
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Prize order completed successfully",
+		"prize":   order.Gift,
+	})
+}
+
+// Send prize completion messages to user and admin
+func (h *Handler) sendPrizeCompletionMessages(telegramID, orderID int64, userName, prize, parfumes, fio, contact, address string) {
+	if h.bot == nil {
+		h.logger.Error("Bot not initialized")
+		return
+	}
+
+	// Get prize display names
+	prizeNames := map[string]string{
+		Prize10ML:    "🧪 10мл парфюм",
+		Prize30ML:    "🧪 30мл парфюм", 
+		PrizeDiamond: "💍 Бриллиант сақина",
+		PrizeMoney:   "💰 100,000 теңге",
+	}
+
+	prizeDisplay := prizeNames[prize]
+	if prizeDisplay == "" {
+		prizeDisplay = prize
+	}
+
+	// User confirmation message
+	userMessage := fmt.Sprintf(
+		"🎉 Құттықтаймыз! Сіз сыйлық ұттыңыз! 🎉\n\n"+
+			"🏆 Сіздің сыйлығыңыз: %s\n\n"+
+			"📦 Тапсырыс мәліметтері:\n"+
+			"🆔 Тапсырыс №: %d\n"+
+			"👤 Тапсырыс беруші: %s\n"+
+			"📱 Телефон: %s\n"+
+			"📍 Мекенжай: %s\n\n"+
+			"🌸 Таңдалған парфюмдер:\n%s\n\n"+
+			"🚚 Жеткізу туралы ақпарат:\n"+
+			"Біздің менеджер сізбен 24 сағат ішінде байланысады.\n"+
+			"Сыйлығыңыз парфюммен бірге жеткізіледі.\n\n"+
+			"Рахмет! 💝",
+		prizeDisplay, orderID, fio, contact, address, parfumes)
+
+	// Send to user
+	_, err := h.bot.SendMessage(h.ctx, &bot.SendMessageParams{
+		ChatID: telegramID,
+		Text:   userMessage,
+	})
+
+	if err != nil {
+		h.logger.Error("Failed to send prize completion message to user",
+			zap.Error(err),
+			zap.Int64("telegram_id", telegramID))
+	}
+
+	// Admin notification message
+	adminMessage := fmt.Sprintf(
+		"🎊 ЖАҢА СЫЙЛЫҚ ЖЕҢІМПАЗЫ! 🎊\n\n"+
+			"🏆 Сыйлық: %s\n"+
+			"🆔 Тапсырыс: %d\n"+
+			"👤 Клиент: %s (@%s)\n"+
+			"📱 Телефон: %s\n"+
+			"📍 Мекенжай: %s\n"+
+			"🌸 Парфюмдер: %s\n"+
+			"⏰ Уақыт: %s\n\n"+
+			"⚠️ СЫЙЛЫҚТЫ ПАРФЮММЕН БІРГЕ ЖЕТКІЗУ КЕРЕК!",
+		prizeDisplay, orderID, fio, userName, contact, address, parfumes,
+		time.Now().Format("2006-01-02 15:04:05"))
+
+	// Send to admins
+	admins := []int64{h.cfg.AdminID, h.cfg.AdminID2}
+	for _, adminID := range admins {
+		if adminID != 0 {
+			_, err := h.bot.SendMessage(h.ctx, &bot.SendMessageParams{
+				ChatID: adminID,
+				Text:   adminMessage,
+			})
+			if err != nil {
+				h.logger.Error("Failed to send admin prize notification",
+					zap.Error(err),
+					zap.Int64("admin_id", adminID))
+			}
+		}
+	}
 }
 
 func (h *Handler) StartHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -174,6 +585,8 @@ func (h *Handler) DefaultHandler(ctx context.Context, b *bot.Bot, update *models
 		}
 	}
 
+	fmt.Println("UserState: ", userState.State)
+	
 	if update.CallbackQuery != nil {
 		switch userState.State {
 		case StateStart:
@@ -210,14 +623,16 @@ func (h *Handler) DefaultHandler(ctx context.Context, b *bot.Bot, update *models
 	case StateContact:
 		h.ShareContactCallbackHandler(ctx, b, update)
 		return
+	default:
+		_, err := b.SendMessage(ctx, &bot.SendMessageParams{
+		    ChatID: update.Message.Chat.ID,
+		    Text:   "Welcome to Parfum Bot!",
+	    })
+	    if err != nil {
+		    h.logger.Error("failed to send message", zap.Error(err))
+	    }
 	}
-	_, err := b.SendMessage(ctx, &bot.SendMessageParams{
-		ChatID: update.Message.Chat.ID,
-		Text:   "Welcome to Parfum Bot!",
-	})
-	if err != nil {
-		h.logger.Error("failed to send message", zap.Error(err))
-	}
+	
 }
 
 func (h *Handler) BuyParfumeHandler(ctx context.Context, b *bot.Bot, update *models.Update) {
@@ -1318,7 +1733,7 @@ func (h *Handler) SetBot(b *bot.Bot) {
 	h.bot = b
 }
 
-// Update your StartWebServer method to include new routes
+// Update your StartWebServer method to include prize routes
 func (h *Handler) StartWebServer(ctx context.Context, b *bot.Bot) {
 	h.SetBot(b)
 
@@ -1327,8 +1742,6 @@ func (h *Handler) StartWebServer(ctx context.Context, b *bot.Bot) {
 	for _, dir := range directories {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			h.logger.Error("Failed to create directory", zap.String("dir", dir), zap.Error(err))
-		} else {
-			h.logger.Info("Directory created/verified", zap.String("dir", dir))
 		}
 	}
 
@@ -1356,15 +1769,13 @@ func (h *Handler) StartWebServer(ctx context.Context, b *bot.Bot) {
 	mux.Handle("/files/", corsMiddleware(http.StripPrefix("/files/", http.FileServer(http.Dir("./files/")))))
 	mux.Handle("/photo/", corsMiddleware(h.createPhotoHandler()))
 
-	// Main Mini App route - serves parfume.html
+	// Main routes
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		h.setCORSHeaders(w)
-		// Serve parfume.html for Mini App
 		path := "./static/parfume.html"
 		http.ServeFile(w, r, path)
 	})
 
-	// Other page routes
 	mux.HandleFunc("/parfume", func(w http.ResponseWriter, r *http.Request) {
 		h.setCORSHeaders(w)
 		path := "./static/parfume.html"
@@ -1377,30 +1788,17 @@ func (h *Handler) StartWebServer(ctx context.Context, b *bot.Bot) {
 		http.ServeFile(w, r, path)
 	})
 
-	mux.HandleFunc("/admin", func(w http.ResponseWriter, r *http.Request) {
+	// NEW: Prize wheel route
+	mux.HandleFunc("/prize", func(w http.ResponseWriter, r *http.Request) {
 		h.setCORSHeaders(w)
-		path := "./static/admin-parfume.html"
+		path := "./static/prize.html"
 		http.ServeFile(w, r, path)
 	})
 
 	// Admin routes
-	mux.HandleFunc("/admin/add-perfume", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/admin", func(w http.ResponseWriter, r *http.Request) {
 		h.setCORSHeaders(w)
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		path := "./static/admin-add-parfume.html"
-		http.ServeFile(w, r, path)
-	})
-
-	mux.HandleFunc("/admin/update-perfume", func(w http.ResponseWriter, r *http.Request) {
-		h.setCORSHeaders(w)
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		path := "./static/admin-update-parfume.html"
+		path := "./static/admin-parfume.html"
 		http.ServeFile(w, r, path)
 	})
 
@@ -1412,13 +1810,18 @@ func (h *Handler) StartWebServer(ctx context.Context, b *bot.Bot) {
 	mux.HandleFunc("/api/delete-parfume/", h.handleDeletePerfume)
 	mux.HandleFunc("/api/search-parfumes", h.handleSearchPerfumes)
 
-	// Cart service
+	// Perfume selection service
 	mux.HandleFunc("/api/user/available-quantity", h.GetUserAvailableQuantity)
-	mux.HandleFunc("/api/user/temp-selections", h.GetUserTemporarySelections) // NEW ENDPOINT
+	mux.HandleFunc("/api/user/temp-selections", h.GetUserTemporarySelections)
 	mux.HandleFunc("/api/user/save-perfume-selection", h.SavePerfumeSelection)
 	mux.HandleFunc("/api/order/complete", h.UpdateOrderWithClientInfo)
 
-	// Existing order endpoints
+	// NEW: Prize wheel endpoints
+	mux.HandleFunc("/api/prize/eligibility", h.CheckSpinEligibility)
+	mux.HandleFunc("/api/prize/spin", h.SpinWheel)
+	mux.HandleFunc("/api/prize/complete", h.CompletePrizeOrder)
+
+	// Existing endpoints
 	mux.HandleFunc("/api/orders", h.handleGetOrders)
 	mux.HandleFunc("/api/order/", h.handleGetOrder)
 
@@ -1435,17 +1838,18 @@ func (h *Handler) StartWebServer(ctx context.Context, b *bot.Bot) {
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"status":    "healthy",
 			"timestamp": time.Now().Format(time.RFC3339),
-			"service":   "zhad-perfume-api",
-			"version":   "3.1.0-perfume-selection",
+			"service":   "zhad-perfume-api-with-prizes",
+			"version":   "4.0.0-prize-wheel",
 		})
 	})
 
-	h.logger.Info("Starting web server with perfume selection logic", zap.String("port", h.cfg.Port))
+	h.logger.Info("Starting web server with prize wheel functionality", zap.String("port", h.cfg.Port))
 
 	if err := http.ListenAndServe(h.cfg.Port, mux); err != nil {
 		h.logger.Fatal("Failed to start web server", zap.Error(err))
 	}
 }
+
 
 // Create photo handler (helper method)
 func (h *Handler) createPhotoHandler() http.Handler {
